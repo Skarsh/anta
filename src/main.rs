@@ -41,7 +41,7 @@ fn main() {
         }
         Ok(ForkResult::Parent { child }) => {
             println!("parent");
-            let debugger = Debugger::new(program_name.to_owned(), child);
+            let mut debugger = Debugger::new(program_name.to_owned(), child);
             debugger.run();
         }
         Err(err) => {

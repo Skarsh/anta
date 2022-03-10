@@ -5,7 +5,7 @@ use nix::sys::wait::waitpid;
 use nix::unistd::Pid;
 
 pub struct Debugger {
-    prog_name: String,
+    _prog_name: String,
     pid: Pid,
     running: bool,
 }
@@ -13,13 +13,13 @@ pub struct Debugger {
 impl Debugger {
     pub fn new(prog_name: String, pid: Pid) -> Self {
         Self {
-            prog_name,
+            _prog_name: prog_name,
             pid,
             running: true,
         }
     }
 
-    pub fn run(&self) {
+    pub fn run(&mut self) {
         println!("Started debugging process {}", self.pid);
 
         waitpid(self.pid, None).unwrap();
@@ -39,12 +39,14 @@ impl Debugger {
         waitpid(self.pid, None).expect("failed to waidpid");
     }
 
-    fn handle_command(&self, line: String) {
+    fn handle_command(&mut self, line: String) {
         let mut args = line.split_whitespace();
         let command = args.next().unwrap();
 
         if command == "continue" {
             self.continue_execution();
+        } else if command == "exit" {
+            self.running = false;
         } else {
             eprintln!("Unknown command");
         }
@@ -57,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_handle_command() {
-        let dbg = Debugger::new(String::from(""), Pid::this());
+        let mut dbg = Debugger::new(String::from(""), Pid::this());
         let line = String::from("continue execution");
         dbg.handle_command(line);
 
