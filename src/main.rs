@@ -1,12 +1,12 @@
 // std
 use std::env;
-use std::ffi::{CStr, CString};
+use std::ffi::{CString};
 use std::process::exit;
 
 // 3rd party
 use nix::sys::ptrace;
-use nix::sys::wait::{waitpid, WaitPidFlag};
-use nix::unistd::{execv, fork, ForkResult, Pid};
+
+use nix::unistd::{execv, fork, ForkResult};
 
 // own
 mod debugger;
