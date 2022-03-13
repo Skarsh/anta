@@ -21,13 +21,40 @@ impl Breakpoint {
     }
 
     pub fn enable(&mut self) {
-        // TODO: Continue here
-        //let data = ptrace::read(self.pid, self.addr);
+        let mut data = ptrace::read(self.pid, self.addr as ptrace::AddressType)
+            .expect("Could not read memory");
+        self.saved_data = (data & 0xff) as u8; // save bottom byte
+        let int3 = 0xcc;
+        let data_with_int3 = ((data & 0xff) | int3);
+
+        // SAFETY: This is needed to be able to change the instruction at the place we want to set a breakpoint
+        unsafe {
+            ptrace::write(
+                self.pid,
+                self.addr as ptrace::AddressType,
+                data_with_int3 as ptrace::AddressType,
+            )
+            .expect("Failed to write memory");
+        }
 
         self.enabled = true;
     }
 
     pub fn disable(&mut self) {
+        let data = ptrace::read(self.pid, self.addr as ptrace::AddressType)
+            .expect("Failed to read memory");
+        let restored_data = ((data & 0xff) | self.saved_data as i64);
+
+        // SAFETY: This is needed to be able to restore the instruction at the location where we set a breakpoint
+        unsafe {
+            ptrace::write(
+                self.pid,
+                self.addr as ptrace::AddressType,
+                restored_data as ptrace::AddressType,
+            )
+            .expect("Failed to write memory")
+        }
+
         self.enabled = false;
     }
 

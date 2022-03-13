@@ -5,8 +5,8 @@ use std::ffi::CString;
 use std::process::exit;
 
 // 3rd party
-use nix::sys::ptrace;
-
+use nix::sys::personality::Persona;
+use nix::sys::{personality, ptrace};
 use nix::unistd::{execv, fork, ForkResult};
 
 // own
@@ -15,6 +15,9 @@ use crate::debugger::Debugger;
 
 mod breakpoint;
 use crate::breakpoint::Breakpoint;
+
+mod register;
+use crate::register::Register;
 
 // constants
 const PREFIX_PATH: &str = "/home/skarsh/dev/security/re/samples";
@@ -41,6 +44,7 @@ fn main() {
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
             println!("child");
+            personality::set(Persona::ADDR_NO_RANDOMIZE);
             execute_debugee(path)
         }
         Ok(ForkResult::Parent { child }) => {
