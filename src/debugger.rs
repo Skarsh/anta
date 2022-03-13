@@ -56,13 +56,4 @@ impl Debugger {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_handle_command() {
-        let mut dbg = Debugger::new(String::from(""), Pid::this());
-        let line = String::from("continue execution");
-        dbg.handle_command(line);
-
-        assert!(true);
-    }
 }
