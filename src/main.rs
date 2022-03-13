@@ -1,6 +1,7 @@
+#![allow(unused)]
 // std
 use std::env;
-use std::ffi::{CString};
+use std::ffi::CString;
 use std::process::exit;
 
 // 3rd party
@@ -11,6 +12,9 @@ use nix::unistd::{execv, fork, ForkResult};
 // own
 mod debugger;
 use crate::debugger::Debugger;
+
+mod breakpoint;
+use crate::breakpoint::Breakpoint;
 
 // constants
 const PREFIX_PATH: &str = "/home/skarsh/dev/security/re/samples";
