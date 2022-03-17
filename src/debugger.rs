@@ -7,6 +7,7 @@ use nix::sys::wait::waitpid;
 use nix::unistd::Pid;
 
 use crate::breakpoint::Breakpoint;
+use crate::register::REGISTERS;
 
 pub struct Debugger {
     _prog_name: String,
@@ -51,6 +52,14 @@ impl Debugger {
         let mut breakpoint = Breakpoint::new(self.pid, addr);
         breakpoint.enable();
         self.breakpoints.insert(addr, breakpoint);
+    }
+
+    // TODO: Need proper formatting and printing here, in line with what is in the
+    // tutorial series
+    pub fn dump_registers() {
+        for register in REGISTERS {
+            println!("{:?}", register);
+        }
     }
 
     fn handle_command(&mut self, line: String) {
