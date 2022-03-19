@@ -52,13 +52,9 @@ impl Debugger {
 
     pub fn set_breakpoint_at_address(&mut self, addr: u64) {
         println!("Set breakpoint at address 0x{:x}", addr);
-
         let mut breakpoint = Breakpoint::new(self.pid, addr);
         breakpoint.enable();
-        println!("Enabled breakpoint");
-
         self.breakpoints.insert(addr, breakpoint);
-        println!("Inserted breakpoint at address 0x{:x}", addr);
     }
 
     // TODO: Need proper formatting and printing here, in line with what is in the
@@ -88,8 +84,6 @@ impl Debugger {
         }
     }
 
-
-    // TODO: Borrow checker issues
     fn step_over_breakpoint(&mut self) {
         // -1 because execution will go past the breakpoint
         let possible_breakpoint_location = get_pc(self.pid) - 1;
