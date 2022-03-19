@@ -16,11 +16,13 @@ use crate::debugger::Debugger;
 mod breakpoint;
 use crate::breakpoint::Breakpoint;
 
+mod command;
+
 mod register;
 use crate::register::Register;
 
 // constants
-const PREFIX_PATH: &str = "/home/skarsh/dev/security/re/samples";
+const PREFIX_PATH: &str = "/home/thomas/dev/debuggers/samples";
 
 fn execute_debugee(path: CString) {
     ptrace::traceme().unwrap();

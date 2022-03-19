@@ -32,11 +32,11 @@ pub const REGISTERS: [Register; 27] = [
 ];
 
 /// Represents information related to a CPU register.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Register<'a> {
-    reg_kind: RegisterKind,
+    pub reg_kind: RegisterKind,
     dwarf_reg: i32,
-    name: &'a str,
+    pub name: &'a str,
 }
 
 impl<'a> Default for Register<'a> {
@@ -50,7 +50,7 @@ impl<'a> Default for Register<'a> {
 }
 
 /// Represents the different types/kinds of CPU registers.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RegisterKind {
     Rax,
     Rbx,
@@ -81,10 +81,10 @@ pub enum RegisterKind {
     Es,
 }
 
-fn get_register_value(pid: Pid, reg: &Register) -> u64 {
-    let regs = ptrace::getregs(pid).expect("Faied to getregs");
+pub fn get_register_value(pid: Pid, reg: RegisterKind) -> u64 {
+    let regs = ptrace::getregs(pid).expect("Failed to getregs");
 
-    match reg.reg_kind {
+    match reg {
         RegisterKind::Rax => regs.rax,
         RegisterKind::Rbx => regs.rbx,
         RegisterKind::Rcx => regs.rcx,
@@ -116,8 +116,8 @@ fn get_register_value(pid: Pid, reg: &Register) -> u64 {
 }
 
 // TODO: Should this return a Result?
-fn set_register_value(pid: Pid, reg: RegisterKind, value: u64) {
-    let mut regs = ptrace::getregs(pid).expect("Faied to getregs");
+pub fn set_register_value(pid: Pid, reg: RegisterKind, value: u64) {
+    let mut regs = ptrace::getregs(pid).expect("Failed to getregs");
 
     match reg {
         RegisterKind::Rax => regs.rax = value,
@@ -152,12 +152,12 @@ fn set_register_value(pid: Pid, reg: RegisterKind, value: u64) {
     ptrace::setregs(pid, regs).expect("Failed to setregs");
 }
 
-fn get_register_value_from_dwarf_register(pid: Pid, reg_num: i32) -> u64 {
+pub fn get_register_value_from_dwarf_register(pid: Pid, reg_num: i32) -> u64 {
     let mut reg_value = 0;
     let mut found_reg = false;
     for reg in REGISTERS {
         if reg.dwarf_reg == reg_num {
-            reg_value = get_register_value(pid, &reg);
+            reg_value = get_register_value(pid, reg.reg_kind);
             found_reg = true;
         }
     }
@@ -169,23 +169,17 @@ fn get_register_value_from_dwarf_register(pid: Pid, reg_num: i32) -> u64 {
     reg_value
 }
 
-fn get_register_name<'a>(reg: &'a Register) -> &'a str {
+pub fn get_register_name<'a>(reg: &'a Register) -> &'a str {
     reg.name
 }
 
-fn get_register_from_name<'a>(name: &'a str) -> Register<'a> {
-    let mut ret_reg = Register::default();
-    let mut found_reg = false;
+pub fn get_register_from_name<'a>(name: String) -> Option<RegisterKind> {
     for reg in REGISTERS {
         if reg.name == name {
-            ret_reg = reg;
-            found_reg = true
+            return Some(reg.reg_kind);
         }
     }
-
-    assert!(found_reg);
-
-    ret_reg
+    None
 }
 
 #[cfg(test)]

@@ -5,13 +5,13 @@ use nix::unistd::Pid;
 
 pub struct Breakpoint {
     pid: Pid,
-    addr: isize,
+    addr: u64,
     enabled: bool,
     saved_data: u8,
 }
 
 impl Breakpoint {
-    pub fn new(pid: Pid, addr: isize) -> Self {
+    pub fn new(pid: Pid, addr: u64) -> Self {
         Self {
             pid,
             addr,
@@ -62,7 +62,7 @@ impl Breakpoint {
         self.enabled
     }
 
-    pub fn get_address(&self) -> isize {
+    pub fn get_address(&self) -> u64 {
         self.addr
     }
 }
