@@ -159,11 +159,4 @@ fn wait_for_signal(pid: Pid) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn set_breakpoint() {
-        let mut debugger = Debugger::new(String::from("Hello"), Pid::this());
-        debugger.set_breakpoint_at_address(0xff);
-    }
 }
