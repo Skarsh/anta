@@ -51,7 +51,7 @@ impl Debugger {
     }
 
     pub fn set_breakpoint_at_address(&mut self, addr: u64) {
-        println!("Set breakpoint at address 0x{:x}", addr);
+        println!("Set breakpoint at address 0x{:016x}", addr);
         let mut breakpoint = Breakpoint::new(self.pid, addr);
         breakpoint.enable();
         self.breakpoints.insert(addr, breakpoint);
@@ -62,7 +62,7 @@ impl Debugger {
     pub fn dump_registers(&self) {
         for reg in REGISTERS {
             println!(
-                "{}: {:x?}",
+                "{}: 0x{:016x}",
                 reg.name,
                 register::get_register_value(self.pid, reg.reg_kind)
             );
@@ -116,7 +116,7 @@ impl Debugger {
             CommandKind::Exit => self.running = false,
             CommandKind::Memory(memory_kind) => match memory_kind {
                 MemoryCommandKind::Read(read_container) => {
-                    println!("{:x?}", self.read_memory(read_container.source))
+                    println!("0x{:016x}", self.read_memory(read_container.source))
                 }
                 MemoryCommandKind::Write(write_container) => {
                     self.write_memory(write_container.dest, write_container.value);
@@ -126,7 +126,7 @@ impl Debugger {
                 RegisterCommandKind::Dump => self.dump_registers(),
                 RegisterCommandKind::Read(read_container) => {
                     println!(
-                        "{:x?}",
+                        "0x{:016x}",
                         register::get_register_value(
                             self.pid,
                             register::get_register_from_name(read_container.source)
