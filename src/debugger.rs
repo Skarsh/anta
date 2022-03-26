@@ -159,4 +159,13 @@ fn wait_for_signal(pid: Pid) {
 
 #[cfg(test)]
 mod tests {
+
+    use object::{Object, ObjectSection};
+    use std::{borrow, env, fs};
+
+    #[test]
+    fn parse_file() {
+        let path = "/home/thomas/dev/debuggers/samples/hello";
+    }
+
 }

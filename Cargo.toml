@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 nix = "0.23.1"
 linux-personality = "1.0.0"
+gimli = "0.26.1"
+object = "0.28.3"
