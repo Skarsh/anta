@@ -5,6 +5,7 @@ use std::ffi::CString;
 use std::process::exit;
 
 // 3rd party
+use clap::Parser;
 use nix::sys::personality::Persona;
 use nix::sys::{personality, ptrace};
 use nix::unistd::{execv, fork, ForkResult};
@@ -32,30 +33,31 @@ fn execute_debugee(path: CString) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args = Args::parse();
 
-    if args.len() < 2 {
-        eprintln!("Program name not specified");
-        exit(-1);
-    }
-
-    let program_name = &args[1];
+    let program_name = args.binary;
     let path = format!("{}/{}", PREFIX_PATH, program_name);
     let path = CString::new(&*path).expect("CString::new failed");
 
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
-            println!("child");
             personality::set(Persona::ADDR_NO_RANDOMIZE);
             execute_debugee(path)
         }
         Ok(ForkResult::Parent { child }) => {
-            println!("parent");
-            let mut debugger = Debugger::new(program_name.to_owned(), child);
+            let mut debugger = Debugger::new(program_name, child);
             debugger.run();
         }
         Err(err) => {
             panic!("[main] fork() failed: {}", err);
         }
     }
+}
+
+/// Simple debugger written in Rust
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    #[clap(short, long)]
+    binary: String,
 }
