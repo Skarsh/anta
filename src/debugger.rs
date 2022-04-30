@@ -156,15 +156,3 @@ fn set_pc(pid: Pid, pc: u64) {
 fn wait_for_signal(pid: Pid) {
     waitpid(pid, None).expect("Failed to waitpid()");
 }
-
-#[cfg(test)]
-mod tests {
-
-    use object::{Object, ObjectSection};
-    use std::{borrow, env, fs};
-
-    #[test]
-    fn parse_file() {
-        let path = "/home/thomas/dev/debuggers/samples/hello";
-    }
-}
