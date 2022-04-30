@@ -112,7 +112,7 @@ impl Debugger {
 
         match command {
             CommandKind::Continue => self.continue_execution(),
-            CommandKind::Break(addr) => self.set_breakpoint_at_address(addr.try_into().unwrap()),
+            CommandKind::Break(addr) => self.set_breakpoint_at_address(addr),
             CommandKind::Exit => self.running = false,
             CommandKind::Memory(memory_kind) => match memory_kind {
                 MemoryCommandKind::Read(read_container) => {

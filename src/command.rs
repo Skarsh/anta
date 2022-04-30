@@ -45,7 +45,7 @@ pub enum MemoryCommandKind {
 /// 4. 'memory'
 ///      - 'read' 'address: hex':                 Read memory from a specific address location
 ///      - 'write' 'addres: hex' 'value: hex':    Write 'value' to memory location at 'address'
-pub fn parse_command<'a>(line: String) -> CommandKind {
+pub fn parse_command(line: String) -> CommandKind {
     // TODO: Lots of repeating here, should be possible to
     // move some of it out into private functions
     let mut args = line.split_whitespace();
@@ -101,7 +101,7 @@ pub fn parse_command<'a>(line: String) -> CommandKind {
                         u64::from_str_radix(args.next().expect("No write memory value given"), 16)
                             .expect("Failed to parse write memory value to hexadecimal value");
 
-                    let reg = register::get_register_from_name(reg_name.to_string().clone());
+                    let reg = register::get_register_from_name(reg_name.to_string());
 
                     CommandKind::Register(RegisterCommandKind::Write(WriteContainer {
                         dest: reg.expect("The register enum was None"),

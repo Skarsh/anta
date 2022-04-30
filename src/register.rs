@@ -173,7 +173,7 @@ pub fn get_register_name<'a>(reg: &'a Register) -> &'a str {
     reg.name
 }
 
-pub fn get_register_from_name<'a>(name: String) -> Option<RegisterKind> {
+pub fn get_register_from_name(name: String) -> Option<RegisterKind> {
     for reg in REGISTERS {
         if reg.name == name {
             return Some(reg.reg_kind);
