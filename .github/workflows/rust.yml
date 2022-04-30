@@ -19,7 +19,7 @@ jobs:
     - name: Formatting
       run: cargo fmt --all --check
     - name: Linting
-      run: cargo clippy -- -D warnings
+      run: cargo clippy --all-targets --all-features -- -D warnings
     - name: Build
       run: cargo build --verbose
     - name: Run tests
