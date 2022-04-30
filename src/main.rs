@@ -44,11 +44,11 @@ fn main() {
     let path = CString::new(&*path).expect("CString::new failed");
 
     match unsafe { fork() } {
-    Ok(ForkResult::Child) => {
-        println!("child");
-        personality::set(Persona::ADDR_NO_RANDOMIZE);
-        execute_debugee(path)
-    }
+        Ok(ForkResult::Child) => {
+            println!("child");
+            personality::set(Persona::ADDR_NO_RANDOMIZE);
+            execute_debugee(path)
+        }
         Ok(ForkResult::Parent { child }) => {
             println!("parent");
             let mut debugger = Debugger::new(program_name.to_owned(), child);
