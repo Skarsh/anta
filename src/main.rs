@@ -22,7 +22,8 @@ mod register;
 use crate::register::Register;
 
 // constants
-const PREFIX_PATH: &str = "/home/thomas/dev/debuggers/samples";
+//const PREFIX_PATH: &str = "/home/thomas/dev/debuggers/samples";
+const PREFIX_PATH: &str = "target/debug/";
 
 fn execute_debugee(path: CString) {
     ptrace::traceme().unwrap();
