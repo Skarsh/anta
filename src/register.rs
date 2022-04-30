@@ -2,33 +2,33 @@ use nix::{sys::ptrace, unistd::Pid};
 
 #[rustfmt::skip]
 pub const REGISTERS: [Register; 27] = [
-    Register{reg_kind: RegisterKind::R15, dwarf_reg: 15, name: "r15"}, // 0
-    Register{reg_kind: RegisterKind::R14, dwarf_reg: 14, name: "r14"}, // 1
-    Register{reg_kind: RegisterKind::R13, dwarf_reg: 13, name: "r13"}, // 2
-    Register{reg_kind: RegisterKind::R12, dwarf_reg: 12, name: "r12"}, // 3
-    Register{reg_kind: RegisterKind::Rbp, dwarf_reg: 6, name: "rbp"}, // 4
-    Register{reg_kind: RegisterKind::Rbx, dwarf_reg: 3, name: "rbx"}, // 5
-    Register{reg_kind: RegisterKind::R11, dwarf_reg: 11, name: "r11"}, // 6
-    Register{reg_kind: RegisterKind::R10, dwarf_reg: 10, name: "r10"}, // 7
-    Register{reg_kind: RegisterKind::R9, dwarf_reg: 9, name: "r9"}, // 8
-    Register{reg_kind: RegisterKind::R8, dwarf_reg: 8, name: "r8"}, // 9
-    Register{reg_kind: RegisterKind::Rax, dwarf_reg: 0, name: "rax"}, // 10
-    Register{reg_kind: RegisterKind::Rcx, dwarf_reg: 2, name: "rcx"}, // 11
-    Register{reg_kind: RegisterKind::Rdx, dwarf_reg: 1, name: "rdx"}, // 12
-    Register{reg_kind: RegisterKind::Rsi, dwarf_reg: 4, name: "rsi"}, // 13
-    Register{reg_kind: RegisterKind::Rdi, dwarf_reg: 5, name: "rdi"}, // 14
+    Register{reg_kind: RegisterKind::R15,     dwarf_reg: 15, name: "r15"},      // 0
+    Register{reg_kind: RegisterKind::R14,     dwarf_reg: 14, name: "r14"},      // 1
+    Register{reg_kind: RegisterKind::R13,     dwarf_reg: 13, name: "r13"},      // 2
+    Register{reg_kind: RegisterKind::R12,     dwarf_reg: 12, name: "r12"},      // 3
+    Register{reg_kind: RegisterKind::Rbp,     dwarf_reg:  6, name: "rbp"},      // 4
+    Register{reg_kind: RegisterKind::Rbx,     dwarf_reg:  3, name: "rbx"},      // 5
+    Register{reg_kind: RegisterKind::R11,     dwarf_reg: 11, name: "r11"},      // 6
+    Register{reg_kind: RegisterKind::R10,     dwarf_reg: 10, name: "r10"},      // 7
+    Register{reg_kind: RegisterKind::R9,      dwarf_reg:  9, name: "r9"},       // 8
+    Register{reg_kind: RegisterKind::R8,      dwarf_reg:  8, name: "r8"},       // 9
+    Register{reg_kind: RegisterKind::Rax,     dwarf_reg:  0, name: "rax"},      // 10
+    Register{reg_kind: RegisterKind::Rcx,     dwarf_reg:  2, name: "rcx"},      // 11
+    Register{reg_kind: RegisterKind::Rdx,     dwarf_reg:  1, name: "rdx"},      // 12
+    Register{reg_kind: RegisterKind::Rsi,     dwarf_reg:  4, name: "rsi"},      // 13
+    Register{reg_kind: RegisterKind::Rdi,     dwarf_reg:  5, name: "rdi"},      // 14
     Register{reg_kind: RegisterKind::OrigRax, dwarf_reg: -1, name: "orig_rax"}, // 15
-    Register{reg_kind: RegisterKind::Rip, dwarf_reg: -1, name: "rip"}, // 16
-    Register{reg_kind: RegisterKind::Cs, dwarf_reg: 51, name: "cs"}, // 17
-    Register{reg_kind: RegisterKind::Rflags, dwarf_reg: 49, name: "eflags"}, // 18
-    Register{reg_kind: RegisterKind::Rsp, dwarf_reg: 7, name: "rsp"}, // 19
-    Register{reg_kind: RegisterKind::Ss, dwarf_reg: 52, name: "ss"}, // 20
-    Register{reg_kind: RegisterKind::FsBase, dwarf_reg: 58, name: "fs_base"}, // 21
-    Register{reg_kind: RegisterKind::GsBase, dwarf_reg: 59, name: "gs_base"}, // 22
-    Register{reg_kind: RegisterKind::Ds, dwarf_reg: 53, name: "ds"}, // 23 
-    Register{reg_kind: RegisterKind::Es, dwarf_reg: 50, name: "es"}, // 24
-    Register{reg_kind: RegisterKind::Fs, dwarf_reg: 54, name: "fs"}, // 25
-    Register{reg_kind: RegisterKind::Gs, dwarf_reg: 55, name: "gs"} // 26
+    Register{reg_kind: RegisterKind::Rip,     dwarf_reg: -1, name: "rip"},      // 16
+    Register{reg_kind: RegisterKind::Cs,      dwarf_reg: 51, name: "cs"},       // 17
+    Register{reg_kind: RegisterKind::Rflags,  dwarf_reg: 49, name: "eflags"},   // 18
+    Register{reg_kind: RegisterKind::Rsp,     dwarf_reg:  7, name: "rsp"},      // 19
+    Register{reg_kind: RegisterKind::Ss,      dwarf_reg: 52, name: "ss"},       // 20
+    Register{reg_kind: RegisterKind::FsBase,  dwarf_reg: 58, name: "fs_base"},  // 21
+    Register{reg_kind: RegisterKind::GsBase,  dwarf_reg: 59, name: "gs_base"},  // 22
+    Register{reg_kind: RegisterKind::Ds,      dwarf_reg: 53, name: "ds"},       // 23 
+    Register{reg_kind: RegisterKind::Es,      dwarf_reg: 50, name: "es"},       // 24
+    Register{reg_kind: RegisterKind::Fs,      dwarf_reg: 54, name: "fs"},       // 25
+    Register{reg_kind: RegisterKind::Gs,      dwarf_reg: 55, name: "gs"}        // 26
 ];
 
 /// Represents information related to a CPU register.
