@@ -22,7 +22,6 @@ mod register;
 use crate::register::Register;
 
 // constants
-//const PREFIX_PATH: &str = "/home/thomas/dev/debuggers/samples";
 const PREFIX_PATH: &str = "target/debug/";
 
 fn execute_debugee(path: CString) {
@@ -45,11 +44,11 @@ fn main() {
     let path = CString::new(&*path).expect("CString::new failed");
 
     match unsafe { fork() } {
-        Ok(ForkResult::Child) => {
-            println!("child");
-            personality::set(Persona::ADDR_NO_RANDOMIZE);
-            execute_debugee(path)
-        }
+    Ok(ForkResult::Child) => {
+        println!("child");
+        personality::set(Persona::ADDR_NO_RANDOMIZE);
+        execute_debugee(path)
+    }
         Ok(ForkResult::Parent { child }) => {
             println!("parent");
             let mut debugger = Debugger::new(program_name.to_owned(), child);
