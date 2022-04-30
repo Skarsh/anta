@@ -101,7 +101,7 @@ impl Debugger {
 
                 bp.disable();
                 ptrace::step(self.pid, None).expect("Failed to single step");
-                wait_for_signal(self.pid);            
+                wait_for_signal(self.pid);
                 bp.enable();
             }
         }
@@ -167,5 +167,4 @@ mod tests {
     fn parse_file() {
         let path = "/home/thomas/dev/debuggers/samples/hello";
     }
-
 }

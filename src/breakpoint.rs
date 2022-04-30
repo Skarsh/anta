@@ -26,7 +26,9 @@ impl Breakpoint {
     // TODO: Remove prints
     pub fn enable(&mut self) {
         let mut data: u64 = ptrace::read(self.pid, self.addr as ptrace::AddressType)
-            .expect("Could not read memory").try_into().expect("Data read from memory does not fit into u64");
+            .expect("Could not read memory")
+            .try_into()
+            .expect("Data read from memory does not fit into u64");
         //println!("data: {:016x}", data);
         self.saved_data = bottom_byte(data);
         //println!("saved_data: {:016x}", self.saved_data);
@@ -49,7 +51,9 @@ impl Breakpoint {
     // TODO: Remove prints
     pub fn disable(&mut self) {
         let data: u64 = ptrace::read(self.pid, self.addr as ptrace::AddressType)
-            .expect("Failed to read memory").try_into().expect("Data read from memory does not fit into u64");
+            .expect("Failed to read memory")
+            .try_into()
+            .expect("Data read from memory does not fit into u64");
 
         //println!("(disable) data: {:016x}", data);
 
@@ -85,14 +89,14 @@ fn bottom_byte(orig_data: u64) -> u8 {
 }
 
 /// Sets the int3 (0xcc) value at the bottom byte of a u64.
-/// This is used to set a breakpoint at a memory address of 
+/// This is used to set a breakpoint at a memory address of
 /// a traced program.
 fn set_int3_at_end_of_data(orig_data: u64) -> u64 {
     (orig_data & !0xff) | INT3
 }
 
 /// Restores the original data from a data with a int3 bottom byte set.
-/// This is done by AND the data with the 0xffffffffffffff00 mask to 
+/// This is done by AND the data with the 0xffffffffffffff00 mask to
 /// nil out the bottom byte, and then OR the data with the saved data
 /// from that before the breakpoint was set.
 fn restore_data_from_int3(data_with_int3: u64, saved_data: u8) -> u64 {
