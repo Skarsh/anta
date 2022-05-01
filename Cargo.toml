@@ -9,6 +9,7 @@ edition = "2021"
 clap = { version = "3.1.13", features = ["derive"] }
 gimli = "0.26.1"
 linux-personality = "1.0.0"
+memmap = "0.7.0"
 nix = "0.23.1"
 object = "0.28.3"
 
@@ -16,3 +17,9 @@ object = "0.28.3"
 name = "hello"
 test = false
 bench = false
+
+[[bin]]
+name = "variables"
+test = false
+bench = false
+
