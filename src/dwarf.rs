@@ -3,13 +3,12 @@ use std::borrow;
 
 #[allow(dead_code)]
 fn dump_file(object: &object::File, endian: gimli::RunTimeEndian) -> Result<(), gimli::Error> {
-
     let load_section = |id: gimli::SectionId| -> Result<borrow::Cow<[u8]>, gimli::Error> {
         match object.section_by_name(id.name()) {
             Some(ref section) => Ok(section
                 .uncompressed_data()
                 .unwrap_or(borrow::Cow::Borrowed(&[][..]))),
-            None => Ok(borrow::Cow::Borrowed(&[][..]))
+            None => Ok(borrow::Cow::Borrowed(&[][..])),
         }
     };
 
@@ -19,7 +18,7 @@ fn dump_file(object: &object::File, endian: gimli::RunTimeEndian) -> Result<(), 
     // Borrow a `Cow<[u8]>` to create an `EndianSlice`
     let borrow_section: &dyn for<'a> Fn(
         &'a borrow::Cow<[u8]>,
-    ) -> gimli::EndianSlice<'a, gimli::RunTimeEndian> = 
+    ) -> gimli::EndianSlice<'a, gimli::RunTimeEndian> =
         &|section| gimli::EndianSlice::new(&*section, endian);
 
     // Create `EndianSlice`s for all of the sections.
@@ -71,4 +70,3 @@ mod tests {
         dump_file(&object, endian).unwrap();
     }
 }
-
