@@ -23,17 +23,13 @@ impl Breakpoint {
         }
     }
 
-    // TODO: Remove prints
     pub fn enable(&mut self) {
         let mut data: u64 = ptrace::read(self.pid, self.addr as ptrace::AddressType)
             .expect("Could not read memory")
             .try_into()
             .expect("Data read from memory does not fit into u64");
-        //println!("data: {:016x}", data);
         self.saved_data = bottom_byte(data);
-        //println!("saved_data: {:016x}", self.saved_data);
         let data_with_int3: u64 = set_int3_at_end_of_data(data);
-        //println!("data_with_int3: {:016x}", data_with_int3);
 
         // SAFETY: This is needed to be able to change the instruction at the place we want to set a breakpoint
         unsafe {
@@ -48,18 +44,13 @@ impl Breakpoint {
         self.enabled = true;
     }
 
-    // TODO: Remove prints
     pub fn disable(&mut self) {
         let data: u64 = ptrace::read(self.pid, self.addr as ptrace::AddressType)
             .expect("Failed to read memory")
             .try_into()
             .expect("Data read from memory does not fit into u64");
 
-        //println!("(disable) data: {:016x}", data);
-
         let restored_data = restore_data_from_int3(data, self.saved_data);
-
-        //println!("(disable) restored_data: {:016x}", restored_data);
 
         // SAFETY: This is needed to be able to restore the instruction at the location where we set a breakpoint
         unsafe {
