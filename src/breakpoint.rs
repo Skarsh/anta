@@ -66,10 +66,6 @@ impl Breakpoint {
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
-
-    pub fn get_address(&self) -> u64 {
-        self.addr
-    }
 }
 
 /// Retrieves the bottom byte of a u64

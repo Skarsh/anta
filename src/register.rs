@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use nix::{sys::ptrace, unistd::Pid};
 
 #[rustfmt::skip]
