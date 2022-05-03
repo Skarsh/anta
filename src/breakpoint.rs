@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused)]
 use nix::sys::ptrace;
 use nix::unistd::Pid;
 
@@ -24,7 +22,7 @@ impl Breakpoint {
     }
 
     pub fn enable(&mut self) {
-        let mut data: u64 = ptrace::read(self.pid, self.addr as ptrace::AddressType)
+        let data: u64 = ptrace::read(self.pid, self.addr as ptrace::AddressType)
             .expect("Could not read memory")
             .try_into()
             .expect("Data read from memory does not fit into u64");
