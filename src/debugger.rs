@@ -1,6 +1,8 @@
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
-use std::io;
+use std::fs::File;
+use std::path::Path;
+use std::{io, io::prelude::*, io::BufReader};
 
 use nix::sys::ptrace;
 use nix::sys::ptrace::AddressType;
@@ -155,4 +157,46 @@ fn set_pc(pid: Pid, pc: u64) {
 
 fn wait_for_signal(pid: Pid) {
     waitpid(pid, None).expect("Failed to waitpid()");
+}
+
+// TODO: Remove allowing of dead code when this is used.
+#[allow(dead_code)]
+fn print_source(file_path: &Path, line: usize, n_lines_context: usize) {
+    let start_line = if line <= n_lines_context {
+        1
+    } else {
+        line - n_lines_context
+    };
+
+    let line_diff = if line < n_lines_context {
+        n_lines_context - line
+    } else {
+        0
+    };
+
+    let end_line = line + n_lines_context + line_diff + 1;
+
+    let file = File::open(file_path).expect("Failed to open file");
+    let reader = BufReader::new(file);
+
+    for (current_line, src_line) in reader.lines().enumerate() {
+        if current_line >= start_line && current_line <= end_line {
+            if current_line == line {
+                println!("> {} {}", current_line, src_line.unwrap());
+            } else {
+                println!("  {} {}", current_line, src_line.unwrap());
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn print_source_test() {
+        let path = Path::new("./src/main.rs");
+        print_source(path, 10, 6);
+    }
 }
