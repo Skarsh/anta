@@ -1,8 +1,5 @@
-#![allow(unused)]
 // std
-use std::env;
 use std::ffi::CString;
-use std::process::exit;
 
 // 3rd party
 use clap::Parser;
@@ -15,12 +12,10 @@ mod debugger;
 use crate::debugger::Debugger;
 
 mod breakpoint;
-use crate::breakpoint::Breakpoint;
 
 mod command;
 
 mod register;
-use crate::register::Register;
 
 // constants
 const PREFIX_PATH: &str = "target/debug/";
@@ -41,7 +36,7 @@ fn main() {
 
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
-            personality::set(Persona::ADDR_NO_RANDOMIZE);
+            let _res = personality::set(Persona::ADDR_NO_RANDOMIZE);
             execute_debugee(path)
         }
         Ok(ForkResult::Parent { child }) => {
