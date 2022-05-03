@@ -1,6 +1,5 @@
 use crate::register::{self, RegisterKind};
 
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct ReadContainer<T> {
     pub source: T,
