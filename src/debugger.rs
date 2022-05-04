@@ -10,7 +10,7 @@ use nix::sys::wait::waitpid;
 use nix::unistd::Pid;
 
 use crate::breakpoint::Breakpoint;
-use crate::command::{parse_command, CommandKind, MemoryCommandKind, RegisterCommandKind};
+use crate::command::{parse_command, Command, MemoryCommand, RegisterCommand};
 use crate::register;
 use crate::register::{RegisterKind, REGISTERS};
 
@@ -113,20 +113,20 @@ impl Debugger {
         let command = parse_command(line);
 
         match command {
-            CommandKind::Continue => self.continue_execution(),
-            CommandKind::Break(addr) => self.set_breakpoint_at_address(addr),
-            CommandKind::Exit => self.running = false,
-            CommandKind::Memory(memory_kind) => match memory_kind {
-                MemoryCommandKind::Read(read_container) => {
+            Command::Continue => self.continue_execution(),
+            Command::Break(addr) => self.set_breakpoint_at_address(addr),
+            Command::Exit => self.running = false,
+            Command::Memory(memory_kind) => match memory_kind {
+                MemoryCommand::Read(read_container) => {
                     println!("0x{:016x}", self.read_memory(read_container.source))
                 }
-                MemoryCommandKind::Write(write_container) => {
+                MemoryCommand::Write(write_container) => {
                     self.write_memory(write_container.dest, write_container.value);
                 }
             },
-            CommandKind::Register(register_command_kind) => match register_command_kind {
-                RegisterCommandKind::Dump => self.dump_registers(),
-                RegisterCommandKind::Read(read_container) => {
+            Command::Register(register_command_kind) => match register_command_kind {
+                RegisterCommand::Dump => self.dump_registers(),
+                RegisterCommand::Read(read_container) => {
                     println!(
                         "0x{:016x}",
                         register::get_register_value(
@@ -136,13 +136,13 @@ impl Debugger {
                         )
                     );
                 }
-                RegisterCommandKind::Write(write_container) => register::set_register_value(
+                RegisterCommand::Write(write_container) => register::set_register_value(
                     self.pid,
                     write_container.dest,
                     write_container.value,
                 ),
             },
-            CommandKind::Unknown => eprintln!("Unknown command"),
+            Command::Unknown => eprintln!("Unknown command"),
         }
     }
 }

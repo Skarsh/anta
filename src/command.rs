@@ -1,35 +1,35 @@
 use crate::register::{self, RegisterKind};
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReadContainer<T> {
     pub source: T,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WriteContainer<T, U> {
     pub dest: T,
     pub value: U,
 }
 
-#[derive(Clone)]
-pub enum CommandKind {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Command {
     Break(u64),
     Continue,
     Exit,
-    Memory(MemoryCommandKind),
-    Register(RegisterCommandKind),
+    Memory(MemoryCommand),
+    Register(RegisterCommand),
     Unknown,
 }
 
-#[derive(Clone)]
-pub enum RegisterCommandKind {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RegisterCommand {
     Dump,
     Read(ReadContainer<String>),
     Write(WriteContainer<RegisterKind, u64>),
 }
 
-#[derive(Clone)]
-pub enum MemoryCommandKind {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MemoryCommand {
     Read(ReadContainer<u64>),
     Write(WriteContainer<u64, u64>),
 }
@@ -44,7 +44,7 @@ pub enum MemoryCommandKind {
 /// 4. 'memory'
 ///      - 'read' 'address: hex':                 Read memory from a specific address location
 ///      - 'write' 'addres: hex' 'value: hex':    Write 'value' to memory location at 'address'
-pub fn parse_command(line: String) -> CommandKind {
+pub fn parse_command(line: String) -> Command {
     // TODO: Lots of repeating here, should be possible to
     // move some of it out into private functions
     let mut args = line.split_whitespace();
@@ -57,10 +57,10 @@ pub fn parse_command(line: String) -> CommandKind {
                 16,
             )
             .expect("Failed to parse breakpoint address to hexadecimal value");
-            CommandKind::Break(break_point_addr)
+            Command::Break(break_point_addr)
         }
-        "continue" => CommandKind::Continue,
-        "exit" => CommandKind::Exit,
+        "continue" => Command::Continue,
+        "exit" => Command::Exit,
         "memory" => {
             let command_arg = args.next().expect("No memory command argument given");
             match command_arg {
@@ -68,7 +68,7 @@ pub fn parse_command(line: String) -> CommandKind {
                     let source =
                         u64::from_str_radix(args.next().expect("No read memory address given"), 16)
                             .expect("Failed to parse read memory address to hexadecimal value");
-                    CommandKind::Memory(MemoryCommandKind::Read(ReadContainer { source }))
+                    Command::Memory(MemoryCommand::Read(ReadContainer { source }))
                 }
                 "write" => {
                     let dest = u64::from_str_radix(
@@ -79,18 +79,18 @@ pub fn parse_command(line: String) -> CommandKind {
                     let value =
                         u64::from_str_radix(args.next().expect("No write memory value given"), 16)
                             .expect("Failed to parse write memeory value to hexadecimal value");
-                    CommandKind::Memory(MemoryCommandKind::Write(WriteContainer { dest, value }))
+                    Command::Memory(MemoryCommand::Write(WriteContainer { dest, value }))
                 }
-                _ => CommandKind::Unknown,
+                _ => Command::Unknown,
             }
         }
         "register" => {
             let command_arg = args.next().expect("No register command argument given");
             match command_arg {
-                "dump" => CommandKind::Register(RegisterCommandKind::Dump),
+                "dump" => Command::Register(RegisterCommand::Dump),
                 "read" => {
                     let source = args.next().expect("No read register name given");
-                    CommandKind::Register(RegisterCommandKind::Read(ReadContainer {
+                    Command::Register(RegisterCommand::Read(ReadContainer {
                         source: source.to_string(),
                     }))
                 }
@@ -102,14 +102,73 @@ pub fn parse_command(line: String) -> CommandKind {
 
                     let reg = register::get_register_from_name(reg_name.to_string());
 
-                    CommandKind::Register(RegisterCommandKind::Write(WriteContainer {
+                    Command::Register(RegisterCommand::Write(WriteContainer {
                         dest: reg.expect("The register enum was None"),
                         value,
                     }))
                 }
-                _ => CommandKind::Unknown,
+                _ => Command::Unknown,
             }
         }
-        _ => CommandKind::Unknown,
+        _ => Command::Unknown,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HEX_BASE: u32 = 16;
+
+    #[test]
+    fn test_continue_command() {
+        let command = parse_command(String::from("continue"));
+        assert_eq!(command, Command::Continue);
+    }
+
+    #[test]
+    fn test_exit_command() {
+        let command = parse_command(String::from("exit"));
+        assert_eq!(command, Command::Exit);
+    }
+
+    #[test]
+    fn test_unknown_command() {
+        let command = parse_command(String::from("unknown"));
+        assert_eq!(command, Command::Unknown);
+    }
+
+    #[test]
+    fn test_memory_command_read_0xff() {
+        let source_address_str = "ff";
+        let source_address_hex = u64::from_str_radix(source_address_str, HEX_BASE)
+            .expect("Failed to parse hex string into u64");
+        let command = parse_command(format!("memory read {}", source_address_str));
+        match command {
+            Command::Memory(MemoryCommand::Read(read_container)) => {
+                assert_eq!(read_container.source, source_address_hex)
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    #[test]
+    fn test_memory_command_write_0x420ff_to_0xff_address() {
+        let dest_address_str = "ff";
+        let dest_address_hex = u64::from_str_radix(dest_address_str, HEX_BASE)
+            .expect("Failed to parse hex string into u64");
+
+        let value_str = "420ff";
+        let value_hex =
+            u64::from_str_radix(value_str, HEX_BASE).expect("Failed to parse hex string into u64");
+
+        let command = parse_command(format!("memory write {} {}", dest_address_str, value_str));
+        match command {
+            Command::Memory(MemoryCommand::Write(write_container)) => {
+                assert_eq!(write_container.dest, dest_address_hex);
+                assert_eq!(write_container.value, value_hex);
+            }
+            _ => unreachable!(),
+        }
     }
 }
