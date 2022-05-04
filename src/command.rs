@@ -171,4 +171,10 @@ mod tests {
             _ => unreachable!(),
         }
     }
+
+    #[test]
+    fn test_register_dump() {
+        let command = parse_command(String::from("register dump"));
+        assert_eq!(Command::Register(RegisterCommand::Dump), command);
+    }
 }
