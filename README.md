@@ -1,6 +1,6 @@
 # Anta
 
-![Anta](../assets/anta_grey_small.jpg?raw=true)
+![Anta](../assets/tamandua_grey.jpg?raw=true)
 
 [![Build Status](https://github.com/skarsh/debug-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Skarsh/debug-rs/actions/workflows/ci.yml)
 [![Security audit](https://github.com/Skarsh/debug-rs/actions/workflows/audit.yml/badge.svg?branch=main)](https://github.com/Skarsh/debug-rs/actions/workflows/audit.yml)
