@@ -1,9 +1,10 @@
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
-use std::fs::File;
 use std::path::Path;
+use std::fs::File;
 use std::{io, io::prelude::*, io::BufReader};
 
+use gimli::{Dwarf, EndianSlice, RunTimeEndian};
 use nix::sys::ptrace;
 use nix::sys::ptrace::AddressType;
 use nix::sys::wait::waitpid;
@@ -14,20 +15,26 @@ use crate::command::{parse_command, Command, MemoryCommand, RegisterCommand};
 use crate::register;
 use crate::register::{RegisterKind, REGISTERS};
 
-pub struct Debugger {
-    _prog_name: String,
+// TODO: Remove allow macro
+#[allow(dead_code)]
+pub struct Debugger<'a> {
+    path: &'a Path,
     pid: Pid,
     running: bool,
     breakpoints: HashMap<u64, Breakpoint>,
+    elf: object::File<'a>,
+    dwarf: Dwarf<EndianSlice<'a, RunTimeEndian>>
 }
 
-impl Debugger {
-    pub fn new(prog_name: String, pid: Pid) -> Self {
+impl<'a> Debugger<'a> {
+    pub fn new(path: &'a Path, pid: Pid, object: object::File<'a>) -> Self {
         Self {
-            _prog_name: prog_name,
+            path,
             pid,
             running: true,
             breakpoints: HashMap::new(),
+            elf: object,
+            dwarf: Dwarf::default()
         }
     }
 
@@ -144,6 +151,12 @@ impl Debugger {
             },
             Command::Unknown => eprintln!("Unknown command"),
         }
+    }
+
+    // TODO: Remove allow macro
+    #[allow(dead_code)]
+    fn get_function_from_pc(_pc: u64) {
+
     }
 }
 

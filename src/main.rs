@@ -1,5 +1,7 @@
 // std
 use std::ffi::CString;
+use std::path::Path;
+use std::fs::File;
 
 // 3rd party
 use clap::Parser;
@@ -31,16 +33,22 @@ fn main() {
     let args = Args::parse();
 
     let program_name = args.binary;
-    let path = format!("{}/{}", PREFIX_PATH, program_name);
-    let path = CString::new(&*path).expect("CString::new failed");
+    let path_string = format!("{}/{}", PREFIX_PATH, program_name);
+    let path = Path::new(&path_string);
+    let file = File::open(&path).unwrap();
+    let mmap = unsafe { memmap::Mmap::map(&file).unwrap() };
+    let object = object::File::parse(&*mmap).unwrap();
+
+    let c_str_path = CString::new(&*path.to_str().unwrap()).expect("CString::new failed");
+
 
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
             let _res = personality::set(Persona::ADDR_NO_RANDOMIZE);
-            execute_debugee(path)
+            execute_debugee(c_str_path)
         }
         Ok(ForkResult::Parent { child }) => {
-            let mut debugger = Debugger::new(program_name, child);
+            let mut debugger = Debugger::new(path, child, object);
             debugger.run();
         }
         Err(err) => {
