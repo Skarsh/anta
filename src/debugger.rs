@@ -4,7 +4,6 @@ use std::fs::File;
 use std::path::Path;
 use std::{io, io::prelude::*, io::BufReader};
 
-use gimli::{Dwarf, EndianSlice, RunTimeEndian};
 use nix::sys::ptrace;
 use nix::sys::ptrace::AddressType;
 use nix::sys::wait::waitpid;
@@ -22,19 +21,15 @@ pub struct Debugger<'a> {
     pid: Pid,
     running: bool,
     breakpoints: HashMap<u64, Breakpoint>,
-    elf: object::File<'a>,
-    dwarf: Dwarf<EndianSlice<'a, RunTimeEndian>>,
 }
 
 impl<'a> Debugger<'a> {
-    pub fn new(path: &'a Path, pid: Pid, object: object::File<'a>) -> Self {
+    pub fn new(path: &'a Path, pid: Pid) -> Self {
         Self {
             path,
             pid,
             running: true,
             breakpoints: HashMap::new(),
-            elf: object,
-            dwarf: Dwarf::default(),
         }
     }
 

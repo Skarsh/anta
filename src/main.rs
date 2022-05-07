@@ -1,10 +1,9 @@
 // std
+use std::env;
 use std::ffi::CString;
-use std::fs::File;
 use std::path::Path;
 
 // 3rd party
-use clap::Parser;
 use nix::sys::personality::Persona;
 use nix::sys::{personality, ptrace};
 use nix::unistd::{execv, fork, ForkResult};
@@ -30,15 +29,11 @@ fn execute_debugee(path: CString) {
 }
 
 fn main() {
-    let args = Args::parse();
+    let args: Vec<String> = env::args().collect();
+    let program_name = &args[1];
 
-    let program_name = args.binary;
     let path_string = format!("{}/{}", PREFIX_PATH, program_name);
     let path = Path::new(&path_string);
-    let file = File::open(&path).unwrap();
-    let mmap = unsafe { memmap::Mmap::map(&file).unwrap() };
-    let object = object::File::parse(&*mmap).unwrap();
-
     let c_str_path = CString::new(&*path.to_str().unwrap()).expect("CString::new failed");
 
     match unsafe { fork() } {
@@ -47,19 +42,11 @@ fn main() {
             execute_debugee(c_str_path)
         }
         Ok(ForkResult::Parent { child }) => {
-            let mut debugger = Debugger::new(path, child, object);
+            let mut debugger = Debugger::new(path, child);
             debugger.run();
         }
         Err(err) => {
             panic!("[main] fork() failed: {}", err);
         }
     }
-}
-
-/// Simple debugger written in Rust
-#[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
-struct Args {
-    #[clap(short, long)]
-    binary: String,
 }
