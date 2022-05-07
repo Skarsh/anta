@@ -1,7 +1,7 @@
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
-use std::path::Path;
 use std::fs::File;
+use std::path::Path;
 use std::{io, io::prelude::*, io::BufReader};
 
 use gimli::{Dwarf, EndianSlice, RunTimeEndian};
@@ -23,7 +23,7 @@ pub struct Debugger<'a> {
     running: bool,
     breakpoints: HashMap<u64, Breakpoint>,
     elf: object::File<'a>,
-    dwarf: Dwarf<EndianSlice<'a, RunTimeEndian>>
+    dwarf: Dwarf<EndianSlice<'a, RunTimeEndian>>,
 }
 
 impl<'a> Debugger<'a> {
@@ -34,7 +34,7 @@ impl<'a> Debugger<'a> {
             running: true,
             breakpoints: HashMap::new(),
             elf: object,
-            dwarf: Dwarf::default()
+            dwarf: Dwarf::default(),
         }
     }
 
@@ -155,9 +155,7 @@ impl<'a> Debugger<'a> {
 
     // TODO: Remove allow macro
     #[allow(dead_code)]
-    fn get_function_from_pc(_pc: u64) {
-
-    }
+    fn get_function_from_pc(_pc: u64) {}
 }
 
 fn get_pc(pid: Pid) -> u64 {

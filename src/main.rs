@@ -1,7 +1,7 @@
 // std
 use std::ffi::CString;
-use std::path::Path;
 use std::fs::File;
+use std::path::Path;
 
 // 3rd party
 use clap::Parser;
@@ -40,7 +40,6 @@ fn main() {
     let object = object::File::parse(&*mmap).unwrap();
 
     let c_str_path = CString::new(&*path.to_str().unwrap()).expect("CString::new failed");
-
 
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
