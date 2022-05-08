@@ -118,10 +118,6 @@ mod tests {
 
     #[test]
     fn type_from_u16() {
-        // None = 0x0,
-        // Rel = 0x1,
-        // Exec = 0x2,
-        // Dyn = 0x3,
         assert_eq!(Type::from_u16(0x0), Some(Type::None));
         assert_eq!(Type::from_u16(0x1), Some(Type::Rel));
         assert_eq!(Type::from_u16(0x2), Some(Type::Exec));
