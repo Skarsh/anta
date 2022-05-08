@@ -9,12 +9,14 @@ use nix::sys::{personality, ptrace};
 use nix::unistd::{execv, fork, ForkResult};
 
 // own
-mod debugger;
-use crate::debugger::Debugger;
-
 mod breakpoint;
 
 mod command;
+
+mod debugger;
+use crate::debugger::Debugger;
+
+mod elf;
 
 mod register;
 
