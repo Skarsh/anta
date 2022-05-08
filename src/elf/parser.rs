@@ -3,8 +3,6 @@ use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 
-// TODO: Remove allow
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u16)]
 pub enum Type {
@@ -28,8 +26,6 @@ impl Type {
     }
 }
 
-// TODO: Remove allow
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u16)]
 pub enum Machine {
@@ -47,7 +43,6 @@ impl Machine {
     }
 }
 
-// TODO: Remove allow
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct ElfFile {
@@ -60,7 +55,6 @@ pub enum ElfParseError {
     InvalidMagicBytes,
 }
 
-// TODO: Remove allow
 #[allow(dead_code)]
 impl ElfFile {
     const MAGIC: &'static [u8] = &[0x7f, 0x45, 0x4c, 0x46];
