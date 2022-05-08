@@ -18,6 +18,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Build sample binaries
+      run: ./samples/build.sh
     - name: Formatting
       run: cargo fmt --all --check
     - name: Linting
