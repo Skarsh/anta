@@ -14,8 +14,8 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn from_u16(r#type: u16) -> Option<Self> {
-        match r#type {
+    pub fn from_u16(elf_type: u16) -> Option<Self> {
+        match elf_type {
             0 => Some(Self::None),
             1 => Some(Self::Rel),
             2 => Some(Self::Exec),
@@ -46,7 +46,7 @@ impl Machine {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct ElfFile {
-    r#type: Option<Type>,
+    elf_type: Option<Type>,
     machine: Option<Machine>,
 }
 
@@ -61,8 +61,8 @@ impl ElfFile {
     const TYPE_OFFSET: usize = 16;
     const MACHINE_OFFSET: usize = 18;
 
-    pub fn new(r#type: Option<Type>, machine: Option<Machine>) -> Self {
-        Self { r#type, machine }
+    pub fn new(elf_type: Option<Type>, machine: Option<Machine>) -> Self {
+        Self { elf_type, machine }
     }
 
     pub fn read_file(file_path: &Path) -> io::Result<Vec<u8>> {
@@ -83,13 +83,13 @@ impl ElfFile {
         // TODO: Check endianness before parsing
         let type_bytes = &buffer[ElfFile::TYPE_OFFSET..ElfFile::MACHINE_OFFSET];
         // TODO: Error handling here
-        let r#type = Type::from_u16(u16::from_le_bytes(type_bytes.try_into().unwrap()));
+        let elf_type = Type::from_u16(u16::from_le_bytes(type_bytes.try_into().unwrap()));
 
         let machine_bytes = &buffer[ElfFile::MACHINE_OFFSET..ElfFile::MACHINE_OFFSET + 2];
         // TODO: Error handling here
         let machine = Machine::from_u16(u16::from_le_bytes(machine_bytes.try_into().unwrap()));
 
-        Ok(ElfFile::new(r#type, machine))
+        Ok(ElfFile::new(elf_type, machine))
     }
 
     pub fn validate_magic(magic_bytes: &[u8]) -> bool {
@@ -126,7 +126,7 @@ mod tests {
         let buffer = ElfFile::read_file(file_path).unwrap();
         let elf_file = ElfFile::parse(buffer).unwrap();
 
-        assert_eq!(elf_file.r#type.unwrap(), Type::Exec);
+        assert_eq!(elf_file.elf_type.unwrap(), Type::Exec);
         assert_eq!(elf_file.machine.unwrap(), Machine::X86_64);
     }
 }
