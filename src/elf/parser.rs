@@ -3,6 +3,8 @@ use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 
+use super::error::ElfParseError;
+
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u16)]
 pub enum Type {
@@ -50,11 +52,6 @@ pub struct ElfFile {
     machine: Option<Machine>,
 }
 
-#[derive(Debug)]
-pub enum ElfParseError {
-    InvalidMagicBytes,
-}
-
 #[allow(dead_code)]
 impl ElfFile {
     const MAGIC: &'static [u8] = &[0x7f, 0x45, 0x4c, 0x46];
@@ -82,12 +79,10 @@ impl ElfFile {
 
         // TODO: Check endianness before parsing
         let type_bytes = &buffer[ElfFile::TYPE_OFFSET..ElfFile::MACHINE_OFFSET];
-        // TODO: Error handling here
-        let elf_type = Type::from_u16(u16::from_le_bytes(type_bytes.try_into().unwrap()));
+        let elf_type = Type::from_u16(u16::from_le_bytes(type_bytes.try_into()?));
 
         let machine_bytes = &buffer[ElfFile::MACHINE_OFFSET..ElfFile::MACHINE_OFFSET + 2];
-        // TODO: Error handling here
-        let machine = Machine::from_u16(u16::from_le_bytes(machine_bytes.try_into().unwrap()));
+        let machine = Machine::from_u16(u16::from_le_bytes(machine_bytes.try_into()?));
 
         Ok(ElfFile::new(elf_type, machine))
     }
