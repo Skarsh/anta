@@ -50,6 +50,7 @@ impl Machine {
 pub struct ElfFile {
     elf_type: Option<Type>,
     machine: Option<Machine>,
+    entry_point: u64,
 }
 
 #[allow(dead_code)]
@@ -57,9 +58,14 @@ impl ElfFile {
     const MAGIC: &'static [u8] = &[0x7f, 0x45, 0x4c, 0x46];
     const TYPE_OFFSET: usize = 16;
     const MACHINE_OFFSET: usize = 18;
+    const ENTRY_POINT_OFFSET: usize = 24;
 
-    pub fn new(elf_type: Option<Type>, machine: Option<Machine>) -> Self {
-        Self { elf_type, machine }
+    pub fn new(elf_type: Option<Type>, machine: Option<Machine>, entry_point: u64) -> Self {
+        Self {
+            elf_type,
+            machine,
+            entry_point,
+        }
     }
 
     pub fn read_file(file_path: &Path) -> io::Result<Vec<u8>> {
@@ -84,7 +90,11 @@ impl ElfFile {
         let machine_bytes = &buffer[ElfFile::MACHINE_OFFSET..ElfFile::MACHINE_OFFSET + 2];
         let machine = Machine::from_u16(u16::from_le_bytes(machine_bytes.try_into()?));
 
-        Ok(ElfFile::new(elf_type, machine))
+        let entry_point_bytes =
+            &buffer[ElfFile::ENTRY_POINT_OFFSET..ElfFile::ENTRY_POINT_OFFSET + 8];
+        let entry_point = u64::from_le_bytes(entry_point_bytes.try_into()?);
+
+        Ok(ElfFile::new(elf_type, machine, entry_point))
     }
 
     pub fn validate_magic(magic_bytes: &[u8]) -> bool {
@@ -123,5 +133,6 @@ mod tests {
 
         assert_eq!(elf_file.elf_type.unwrap(), Type::Exec);
         assert_eq!(elf_file.machine.unwrap(), Machine::X86_64);
+        assert_eq!(elf_file.entry_point, 0x401000);
     }
 }
