@@ -6,13 +6,14 @@
 [![Security audit](https://github.com/Skarsh/debug-rs/actions/workflows/audit.yml/badge.svg?branch=main)](https://github.com/Skarsh/debug-rs/actions/workflows/audit.yml)
 
 ## Introduction
-Tamandua is a debugger from scratch project. It is initially intended for me to learn more about binaries,
+Tamandua is a debugger from scratch project. It is initially intended as project to learn more about binaries,
 how they work, and understand the magic that are modern day debuggers.
 Currently most of the code is a Rust implementation of the [TartanLlama's debugger series] (https://blog.tartanllama.xyz/writing-a-linux-debugger-setup/)
 (highly recommended) to get off the ground. But the vision goes beyond that.
 
 ## Disclaimer
-This project is under heavy development is not yet intended to be used in any serious context.
+This project is under heavy development and is not yet intended to be used in any serious context.
+It is still primarily a project meant for learning purposes.
 
 ## Building
 Building the debugger requires `Cargo`, the Rust build tool. It can be built running `cargo build --release` command.
