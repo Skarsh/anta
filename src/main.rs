@@ -20,9 +20,6 @@ mod elf;
 
 mod register;
 
-// constants
-const PREFIX_PATH: &str = "target/debug/";
-
 fn execute_debugee(path: CString) {
     ptrace::traceme().unwrap();
 
@@ -32,10 +29,9 @@ fn execute_debugee(path: CString) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let program_name = &args[1];
+    let program_path_string = &args[1];
 
-    let path_string = format!("{}/{}", PREFIX_PATH, program_name);
-    let path = Path::new(&path_string);
+    let path = Path::new(&program_path_string);
     let c_str_path = CString::new(&*path.to_str().unwrap()).expect("CString::new failed");
 
     match unsafe { fork() } {
