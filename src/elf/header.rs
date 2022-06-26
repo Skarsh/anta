@@ -23,7 +23,7 @@ type Elf64Word = u32;
 type Elf64Sxword = i64;
 type Elf64Xword = u64;
 
-const ELFMAG0: u8 = 0xfe;
+const ELFMAG0: u8 = 0x7f;
 const ELFMAG1: u8 = 0x45;
 const ELFMAG2: u8 = 0x4c;
 const ELFMAG3: u8 = 0x46;
@@ -40,6 +40,9 @@ const EI_ABIVERSION: usize = 8;
 const EI_PAD: usize = 9;
 const EI_NIDENT: usize = 16;
 
+const ELF_IDENT_PAD_SIZE: usize = 7;
+
+#[derive(Debug)]
 #[repr(u8)]
 enum EIClass {
     ElfClassNone = 0,
@@ -47,6 +50,7 @@ enum EIClass {
     ElfClass64 = 2,
 }
 
+#[derive(Debug)]
 #[repr(u8)]
 enum EIData {
     ElfDataNone = 0,
@@ -56,12 +60,14 @@ enum EIData {
 
 /// The version number of the ELF specification
 /// Currently this must be EVCurrent
+#[derive(Debug, PartialEq, Eq)]
 #[repr(u8)]
 enum EIVersion {
     EvNone,
     EvCurrent,
 }
 
+#[derive(Debug)]
 enum EIOSABI {
     /// No extension or unspecified
     ElfOSABINone = 0,
@@ -91,8 +97,24 @@ enum EIOSABI {
     ElfOSABINsk = 14,
 }
 
+#[derive(Debug)]
+#[repr(C)]
+pub struct ElfIdent {
+    ei_mag0: ElfByte,
+    ei_mag1: ElfByte,
+    ei_mag2: ElfByte,
+    ei_mag3: ElfByte,
+    ei_class: EIClass,
+    ei_data: EIData,
+    ei_version: EIVersion,
+    ei_osabi: EIOSABI,
+    ei_abi_version: ElfByte,
+    ei_pad: [u8; ELF_IDENT_PAD_SIZE],
+}
+
+#[repr(C)]
 pub struct Elf32Ehdr {
-    e_ident: [ElfByte; EI_NIDENT],
+    e_ident: ElfIdent,
     e_type: Elf32Half,
     e_machine: Elf32Half,
     e_version: Elf32Word,
@@ -109,7 +131,7 @@ pub struct Elf32Ehdr {
 }
 
 pub struct Elf64Ehdr {
-    e_ident: [ElfByte; EI_NIDENT],
+    e_ident: ElfIdent,
     e_type: Elf64Half,
     e_machine: Elf64Half,
     e_version: Elf64Word,
@@ -309,4 +331,59 @@ pub enum ElfMachine {
     EMSNP1K = 99,
     /// STMicroelectronics ST200 microcontroller
     EMST200 = 100,
+}
+
+/// Checks whether the EIDENT bytes has valid values
+/// for its size, magic bytes and elf specification version
+pub fn validate_elf_ident(elf_ident: &ElfIdent) -> bool {
+
+    let valid_size = std::mem::size_of_val(elf_ident) == EI_NIDENT;
+
+    let valid_magic = elf_ident.ei_mag0 == ELFMAG0
+        && elf_ident.ei_mag1 == ELFMAG1
+        && elf_ident.ei_mag2 == ELFMAG2
+        && elf_ident.ei_mag3 == ELFMAG3;
+    
+    let valid_version = elf_ident.ei_version == EIVersion::EvCurrent;
+
+    valid_size && valid_magic && valid_version
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    #[test]
+    fn check_size_of_ident_struct() {
+        let ident = ElfIdent {
+            ei_mag0: 0x7f,
+            ei_mag1: 0x45,
+            ei_mag2: 0x4c,
+            ei_mag3: 0x46,
+            ei_class: EIClass::ElfClass64,
+            ei_data: EIData::ElfData2LSB,
+            ei_version: EIVersion::EvCurrent,
+            ei_osabi: EIOSABI::ElfOSABILinux,
+            ei_abi_version: 1,
+            ei_pad: [0; ELF_IDENT_PAD_SIZE],
+        };
+
+        assert_eq!(std::mem::size_of::<ElfIdent>(), EI_NIDENT);
+        assert_eq!(std::mem::size_of_val(&ident), EI_NIDENT);
+    }
+
+    #[test]
+    fn parse_ident_from_elf_file() {
+        let mut f = File::open("samples/bin/hello").unwrap();
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer).unwrap();
+
+        let (head, body, tail) = unsafe { buffer.align_to::<ElfIdent>() };
+        assert!(head.is_empty(), "Data was not aligned");
+        let elf_ident = &body[0];
+        
+        assert!(validate_elf_ident(elf_ident));
+    }
 }
