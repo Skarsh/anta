@@ -301,39 +301,39 @@ pub enum Machine {
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf32Ehdr {
-    e_ident: Ident,
-    e_type: ElfType,
-    e_machine: Machine,
-    e_version: Elf32Word,
-    e_entry: Elf32Addr,
-    e_phoff: Elf32Off,
-    e_shoff: Elf32Off,
-    e_flags: Elf32Word,
-    e_ehsize: Elf32Half,
-    e_phentsize: Elf32Half,
-    e_phnum: Elf32Half,
-    e_shentsize: Elf32Half,
-    e_shnum: Elf32Half,
-    e_shstrndx: Elf32Half,
+    ident: Ident,
+    elf_type: ElfType,
+    machine: Machine,
+    version: Elf32Word,
+    entry: Elf32Addr,
+    ph_off: Elf32Off,
+    sh_off: Elf32Off,
+    flags: Elf32Word,
+    eh_size: Elf32Half,
+    ph_ent_size: Elf32Half,
+    ph_num: Elf32Half,
+    sh_ent_size: Elf32Half,
+    sh_num: Elf32Half,
+    sh_str_ndx: Elf32Half,
 }
 
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf64Ehdr {
-    e_ident: Ident,
-    e_type: ElfType,
-    e_machine: Machine,
-    e_version: Elf64Word,
-    e_entry: Elf64Addr,
-    e_phoff: Elf64Off,
-    e_shoff: Elf64Off,
-    e_flags: Elf64Word,
-    e_ehsize: Elf64Half,
-    e_phentsize: Elf64Half,
-    e_phnum: Elf64Half,
-    e_shentsize: Elf64Half,
-    e_shnum: Elf64Half,
-    e_shstrndx: Elf64Half,
+    ident: Ident,
+    elf_type: ElfType,
+    machine: Machine,
+    version: Elf64Word,
+    entry: Elf64Addr,
+    ph_off: Elf64Off,
+    sh_off: Elf64Off,
+    flags: Elf64Word,
+    eh_size: Elf64Half,
+    ph_ent_size: Elf64Half,
+    ph_num: Elf64Half,
+    sh_ent_size: Elf64Half,
+    sh_num: Elf64Half,
+    sh_str_ndx: Elf64Half,
 }
 
 pub enum ElfHeader {
@@ -404,31 +404,31 @@ pub enum ElfSectionFlag {
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf32Shdr {
-    sh_name: Elf32Word,
+    name: Elf32Word,
     sh_type: ElfSectionType,
-    sh_flags: Elf32Word,
-    sh_addr: Elf32Addr,
-    sh_offset: Elf32Off,
-    sh_size: Elf32Word,
-    sh_link: Elf32Word,
-    sh_info: Elf32Word,
-    sh_addralign: Elf32Word,
-    sh_entsize: Elf32Word,
+    flags: Elf32Word,
+    addr: Elf32Addr,
+    offset: Elf32Off,
+    size: Elf32Word,
+    link: Elf32Word,
+    info: Elf32Word,
+    addr_align: Elf32Word,
+    ent_size: Elf32Word,
 }
 
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf64Shdr {
-    sh_name: Elf64Word,
+    name: Elf64Word,
     sh_type: ElfSectionType,
-    sh_flags: Elf64Xword,
-    sh_addr: Elf64Addr,
-    sh_offset: Elf64Off,
-    sh_size: Elf64Xword,
-    sh_link: Elf64Word,
-    sh_info: Elf64Word,
-    sh_addralign: Elf64Xword,
-    sh_entsize: Elf64Xword,
+    flags: Elf64Xword,
+    addr: Elf64Addr,
+    offset: Elf64Off,
+    size: Elf64Xword,
+    link: Elf64Word,
+    info: Elf64Word,
+    addr_align: Elf64Xword,
+    ent_size: Elf64Xword,
 }
 
 #[cfg(test)]
@@ -478,10 +478,10 @@ mod tests {
         let (head, body, tail) = unsafe { buffer.align_to::<Elf64Ehdr>() };
         assert!(head.is_empty(), "Data was not aligned");
         let elf_64_ehdr = &body[0];
-        assert!(validate_elf_ident(&elf_64_ehdr.e_ident));
+        assert!(validate_elf_ident(&elf_64_ehdr.ident));
 
-        assert_eq!(elf_64_ehdr.e_type, ElfType::Exec);
-        assert_eq!(elf_64_ehdr.e_machine, Machine::X86_64);
+        assert_eq!(elf_64_ehdr.elf_type, ElfType::Exec);
+        assert_eq!(elf_64_ehdr.machine, Machine::X86_64);
 
         println!("{:x?}", elf_64_ehdr);
     }
