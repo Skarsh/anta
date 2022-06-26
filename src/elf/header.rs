@@ -336,14 +336,13 @@ pub enum ElfMachine {
 /// Checks whether the EIDENT bytes has valid values
 /// for its size, magic bytes and elf specification version
 pub fn validate_elf_ident(elf_ident: &ElfIdent) -> bool {
-
     let valid_size = std::mem::size_of_val(elf_ident) == EI_NIDENT;
 
     let valid_magic = elf_ident.ei_mag0 == ELFMAG0
         && elf_ident.ei_mag1 == ELFMAG1
         && elf_ident.ei_mag2 == ELFMAG2
         && elf_ident.ei_mag3 == ELFMAG3;
-    
+
     let valid_version = elf_ident.ei_version == EIVersion::EvCurrent;
 
     valid_size && valid_magic && valid_version
@@ -383,7 +382,7 @@ mod tests {
         let (head, body, tail) = unsafe { buffer.align_to::<ElfIdent>() };
         assert!(head.is_empty(), "Data was not aligned");
         let elf_ident = &body[0];
-        
+
         assert!(validate_elf_ident(elf_ident));
     }
 }
