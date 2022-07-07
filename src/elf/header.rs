@@ -440,10 +440,10 @@ mod tests {
     #[test]
     fn check_size_of_ident_struct() {
         let ident = Ident {
-            mag0: 0x7f,
-            mag1: 0x45,
-            mag2: 0x4c,
-            mag3: 0x46,
+            mag0: ELFMAG0,
+            mag1: ELFMAG1,
+            mag2: ELFMAG2,
+            mag3: ELFMAG3,
             class: Class::ElfClass64,
             data: Data::ElfData2Lsb,
             version: Version::Current,
