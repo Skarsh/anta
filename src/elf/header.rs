@@ -4,26 +4,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::upper_case_acronyms)]
 
-type ElfByte = u8;
-type Elf32Addr = u32;
-type Elf32Off = u32;
-type Elf32Section = u32;
-type Elf32Versym = u32;
-type Elf32Half = u16;
-type Elf32Sword = u32;
-type Elf32Word = u32;
-type Elf32Sxword = i64;
-type Elf32Xword = u64;
-
-type Elf64Addr = u64;
-type Elf64Off = u64;
-type Elf64Section = u32;
-type Elf64Versym = u32;
-type Elf64Half = u16;
-type Elf64Sword = u32;
-type Elf64Word = u32;
-type Elf64Sxword = i64;
-type Elf64Xword = u64;
+use super::types::*;
 
 const ELFMAG0: u8 = 0x7f;
 const ELFMAG1: u8 = 0x45;
@@ -298,42 +279,44 @@ pub enum Machine {
     ST200 = 100,
 }
 
+// TODO: pub or private access for fields?
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf32Ehdr {
-    ident: Ident,
-    elf_type: ElfType,
-    machine: Machine,
-    version: Elf32Word,
-    entry: Elf32Addr,
-    ph_off: Elf32Off,
-    sh_off: Elf32Off,
-    flags: Elf32Word,
-    eh_size: Elf32Half,
-    ph_ent_size: Elf32Half,
-    ph_num: Elf32Half,
-    sh_ent_size: Elf32Half,
-    sh_num: Elf32Half,
-    sh_str_ndx: Elf32Half,
+    pub ident: Ident,
+    pub elf_type: ElfType,
+    pub machine: Machine,
+    pub version: Elf32Word,
+    pub entry: Elf32Addr,
+    pub ph_off: Elf32Off,
+    pub sh_off: Elf32Off,
+    pub flags: Elf32Word,
+    pub eh_size: Elf32Half,
+    pub ph_ent_size: Elf32Half,
+    pub ph_num: Elf32Half,
+    pub sh_ent_size: Elf32Half,
+    pub sh_num: Elf32Half,
+    pub sh_str_ndx: Elf32Half,
 }
 
+// TODO: pub or private access for fields?
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf64Ehdr {
-    ident: Ident,
-    elf_type: ElfType,
-    machine: Machine,
-    version: Elf64Word,
-    entry: Elf64Addr,
-    ph_off: Elf64Off,
-    sh_off: Elf64Off,
-    flags: Elf64Word,
-    eh_size: Elf64Half,
-    ph_ent_size: Elf64Half,
-    ph_num: Elf64Half,
-    sh_ent_size: Elf64Half,
-    sh_num: Elf64Half,
-    sh_str_ndx: Elf64Half,
+    pub ident: Ident,
+    pub elf_type: ElfType,
+    pub machine: Machine,
+    pub version: Elf64Word,
+    pub entry: Elf64Addr,
+    pub ph_off: Elf64Off,
+    pub sh_off: Elf64Off,
+    pub flags: Elf64Word,
+    pub eh_size: Elf64Half,
+    pub ph_ent_size: Elf64Half,
+    pub ph_num: Elf64Half,
+    pub sh_ent_size: Elf64Half,
+    pub sh_num: Elf64Half,
+    pub sh_str_ndx: Elf64Half,
 }
 
 pub enum ElfHeader {
@@ -354,122 +337,6 @@ pub fn validate_elf_ident(elf_ident: &Ident) -> bool {
     let valid_version = elf_ident.version == Version::Current;
 
     valid_size && valid_magic && valid_version
-}
-
-// ================================================== SECTIONS ====================================================================== //
-
-#[derive(Debug)]
-#[repr(u32)]
-pub enum ElfSectionType {
-    Null = 0,
-    ProgBits = 1,
-    SymTab = 2,
-    StrTab = 3,
-    Rela = 4,
-    Hash = 5,
-    Dynamic = 6,
-    Note = 7,
-    NoBits = 8,
-    Rel = 9,
-    ShLib = 10,
-    DynSym = 11,
-    InitArray = 14,
-    FiniArray = 15,
-    PreInitArray = 16,
-    Group = 17,
-    SymTabShndx = 18,
-    LoOs = 0x60000000,
-    HiOs = 0x6fffffff,
-    LoProc = 0x70000000,
-    Hiproc = 0x7fffffff,
-    LoUser = 0x80000000,
-    HiUser = 0xffffffff,
-}
-
-#[derive(Debug)]
-#[repr(u32)]
-pub enum Elf32SectionFlag {
-    Write = 0x1,
-    Alloc = 0x2,
-    Execinstr = 0x4,
-    Merge = 0x10,
-    Strings = 0x20,
-    InfoLink = 0x40,
-    LinkOrder = 0x80,
-    OsNonconforming = 0x100,
-    Group = 0x200,
-    Tls = 0x400,
-    MaskOs = 0x0ff00000,
-    MaskProc = 0xf0000000,
-}
-
-#[derive(Debug)]
-#[repr(u64)]
-pub enum Elf64SectionFlag {
-    Write = 0x1,
-    Alloc = 0x2,
-    Execinstr = 0x4,
-    Merge = 0x10,
-    Strings = 0x20,
-    InfoLink = 0x40,
-    LinkOrder = 0x80,
-    OsNonconforming = 0x100,
-    Group = 0x200,
-    Tls = 0x400,
-    MaskOs = 0x0ff00000,
-    MaskProc = 0xf0000000,
-}
-
-#[derive(Debug)]
-#[repr(C)]
-pub struct Elf32Shdr {
-    name: Elf32Word,
-    sh_type: ElfSectionType,
-    flags: Elf32SectionFlag,
-    addr: Elf32Addr,
-    offset: Elf32Off,
-    size: Elf32Word,
-    link: Elf32Word,
-    info: Elf32Word,
-    addr_align: Elf32Word,
-    ent_size: Elf32Word,
-}
-
-#[derive(Debug)]
-#[repr(C)]
-pub struct Elf64Shdr {
-    name: Elf64Word,
-    sh_type: ElfSectionType,
-    flags: Elf64SectionFlag,
-    addr: Elf64Addr,
-    offset: Elf64Off,
-    size: Elf64Xword,
-    link: Elf64Word,
-    info: Elf64Word,
-    addr_align: Elf64Xword,
-    ent_size: Elf64Xword,
-}
-
-// ================================================== SYMBOLS ====================================================================== //
-
-#[derive(Debug)]
-pub struct Elf32Sym {
-    name: Elf32Word,
-    value: Elf32Addr,
-    size: Elf32Word,
-    info: u8,
-    other: u8,
-    shndx: Elf32Half,
-}
-
-#[derive(Debug)]
-pub struct Elf64Sym {
-    name: Elf64Word,
-    info: u8,
-    other: u8,
-    shndx: Elf64Half,
-    value: Elf64Addr,
-    size: Elf64Xword,
 }
 
 #[cfg(test)]
@@ -525,56 +392,5 @@ mod tests {
         assert_eq!(elf_64_ehdr.machine, Machine::X86_64);
 
         println!("{:x?}", elf_64_ehdr);
-    }
-
-    #[test]
-    fn parse_section_headers() {
-        let mut f = File::open("samples/bin/hello").unwrap();
-        let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
-
-        let (head, body, tail) = unsafe { buffer.align_to::<Elf64Ehdr>() };
-        assert!(head.is_empty(), "Data was not aligned");
-        let elf_64_ehdr = &body[0];
-        assert!(validate_elf_ident(&elf_64_ehdr.ident));
-
-        assert_eq!(elf_64_ehdr.elf_type, ElfType::Exec);
-        assert_eq!(elf_64_ehdr.machine, Machine::X86_64);
-
-        //println!("elf header: {:?}", elf_64_ehdr);
-        println!(
-            "offset to the section header table: {:x}",
-            elf_64_ehdr.sh_off
-        );
-        println!(
-            "number of entries in the section header table: {}",
-            elf_64_ehdr.sh_num
-        );
-        println!("section header entry size: {}", elf_64_ehdr.sh_ent_size);
-
-        let mut offset: usize = elf_64_ehdr.sh_off.try_into().unwrap();
-        let mut section_header_entries = Vec::new();
-        for i in 1..=elf_64_ehdr.sh_num {
-            let entry_slice = &buffer[offset..offset + elf_64_ehdr.sh_ent_size as usize];
-            let (head, body, tail) = unsafe { entry_slice.align_to::<Elf64Shdr>() };
-            assert!(head.is_empty());
-            let elf_64_shdr = &body[0];
-            section_header_entries.push(elf_64_shdr);
-
-            //println!("elf_64_shdr{:?}", elf_64_shdr);
-
-            // Increase the offset for parsingt the next entry
-            // in the section header table
-            offset += elf_64_ehdr.sh_ent_size as usize;
-        }
-
-        println!(
-            "string table entry: {:?}",
-            section_header_entries[elf_64_ehdr.sh_str_ndx as usize]
-        );
-
-        //for entry in section_header_entries {
-        //    let string_table_entry = section_header_entries[elf_64_ehdr.sh_str_ndx as usize];
-        //}
     }
 }
