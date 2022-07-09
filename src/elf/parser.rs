@@ -1,138 +1,72 @@
+// TODO: Remove
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
+use super::header::{self, validate_elf_ident, Class, Data, ElfHeader, EI_CLASS_IDX, EI_DATA_IDX};
 use std::fs::File;
-use std::io;
-use std::io::prelude::*;
+use std::io::Read;
 use std::path::Path;
 
-use super::error::ElfParseError;
-
-#[derive(Debug, PartialEq, Eq)]
-#[repr(u16)]
-pub enum Type {
-    None = 0x0,
-    Rel = 0x1,
-    Exec = 0x2,
-    Dyn = 0x3,
-    Core = 0x4,
+pub struct ElfParser<'a> {
+    file_path: &'a Path,
+    file_bytes: Vec<u8>,
 }
 
-impl Type {
-    pub fn from_u16(elf_type: u16) -> Option<Self> {
-        match elf_type {
-            0 => Some(Self::None),
-            1 => Some(Self::Rel),
-            2 => Some(Self::Exec),
-            3 => Some(Self::Dyn),
-            4 => Some(Self::Core),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-#[repr(u16)]
-pub enum Machine {
-    X86 = 0x03,
-    X86_64 = 0x3e,
-}
-
-impl Machine {
-    pub fn from_u16(machine: u16) -> Option<Self> {
-        match machine {
-            0x03 => Some(Self::X86),
-            0x3e => Some(Self::X86_64),
-            _ => None,
-        }
-    }
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct ElfFile {
-    elf_type: Option<Type>,
-    machine: Option<Machine>,
-    entry_point: u64,
-}
-
-#[allow(dead_code)]
-impl ElfFile {
-    const MAGIC: &'static [u8] = &[0x7f, 0x45, 0x4c, 0x46];
-    const TYPE_OFFSET: usize = 16;
-    const MACHINE_OFFSET: usize = 18;
-    const ENTRY_POINT_OFFSET: usize = 24;
-
-    pub fn new(elf_type: Option<Type>, machine: Option<Machine>, entry_point: u64) -> Self {
-        Self {
-            elf_type,
-            machine,
-            entry_point,
+impl<'a> ElfParser<'a> {
+    pub fn new(file_path: &'a Path) -> Self {
+        ElfParser {
+            file_path,
+            file_bytes: Vec::new(),
         }
     }
 
-    pub fn read_file(file_path: &Path) -> io::Result<Vec<u8>> {
-        let mut f = File::open(file_path).unwrap();
-        let mut buffer = Vec::new();
-
-        f.read_to_end(&mut buffer)?;
-        Ok(buffer)
+    // TODO: This assumes that the whole file can be read
+    // from start to end into a single Vec. If this is a very
+    // big file, this should probably be done in a lazy manner instead
+    pub fn read_elf_file_into_buffer(&mut self) {
+        let mut file = File::open(self.file_path).unwrap();
+        file.read_to_end(&mut self.file_bytes).unwrap();
     }
 
-    pub fn parse(buffer: Vec<u8>) -> Result<ElfFile, ElfParseError> {
-        let magic_bytes = &buffer[..ElfFile::MAGIC.len()];
-        let valid_magic_bytes = ElfFile::validate_magic(magic_bytes);
-        if !valid_magic_bytes {
-            return Err(ElfParseError::InvalidMagicBytes);
-        }
+    pub fn parse_header(&mut self) -> ElfHeader {
+        let class_byte = self.file_bytes[EI_CLASS_IDX];
+        let class = Class::try_from(class_byte).unwrap();
+        println!("{:?}", class);
 
-        // TODO: Check endianness before parsing
-        let type_bytes = &buffer[ElfFile::TYPE_OFFSET..ElfFile::MACHINE_OFFSET];
-        let elf_type = Type::from_u16(u16::from_le_bytes(type_bytes.try_into()?));
+        let data_byte = self.file_bytes[EI_DATA_IDX];
+        let _data = Data::try_from(data_byte).unwrap();
 
-        let machine_bytes = &buffer[ElfFile::MACHINE_OFFSET..ElfFile::MACHINE_OFFSET + 2];
-        let machine = Machine::from_u16(u16::from_le_bytes(machine_bytes.try_into()?));
+        todo!();
 
-        let entry_point_bytes =
-            &buffer[ElfFile::ENTRY_POINT_OFFSET..ElfFile::ENTRY_POINT_OFFSET + 8];
-        let entry_point = u64::from_le_bytes(entry_point_bytes.try_into()?);
-
-        Ok(ElfFile::new(elf_type, machine, entry_point))
-    }
-
-    pub fn validate_magic(magic_bytes: &[u8]) -> bool {
-        magic_bytes == ElfFile::MAGIC
     }
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
+    use std::path::Path;
 
     #[test]
-    fn validate_magic_bytes() {
-        let file_path = Path::new("./samples/bin/hello");
-        let buffer = ElfFile::read_file(file_path).unwrap();
-        let magic_bytes = &buffer[..ElfFile::MAGIC.len()];
-        let valid_magic_bytes = ElfFile::validate_magic(magic_bytes);
-        assert!(valid_magic_bytes);
+    fn new_parser() {
+        let parser = ElfParser::new(Path::new("samples/bin/hello"));
+
+        assert_eq!(parser.file_path.to_str().unwrap(), "samples/bin/hello");
+        assert_eq!(parser.file_bytes.len(), 0);
     }
 
     #[test]
-    fn type_from_u16() {
-        assert_eq!(Type::from_u16(0x0), Some(Type::None));
-        assert_eq!(Type::from_u16(0x1), Some(Type::Rel));
-        assert_eq!(Type::from_u16(0x2), Some(Type::Exec));
-        assert_eq!(Type::from_u16(0x3), Some(Type::Dyn));
-        assert_eq!(Type::from_u16(0x4), Some(Type::Core));
-        assert_eq!(Type::from_u16(0xdead), None);
+    fn test_read_elf_file_into_buffer() {
+        let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
+        let expected_file_size = 8912;
+        parser.read_elf_file_into_buffer();
+        assert_eq!(parser.file_bytes.len(), expected_file_size);
     }
 
+    #[should_panic]
     #[test]
-    fn parse_elf_file() {
-        let file_path = Path::new("./samples/bin/hello");
-        let buffer = ElfFile::read_file(file_path).unwrap();
-        let elf_file = ElfFile::parse(buffer).unwrap();
-
-        assert_eq!(elf_file.elf_type.unwrap(), Type::Exec);
-        assert_eq!(elf_file.machine.unwrap(), Machine::X86_64);
-        assert_eq!(elf_file.entry_point, 0x401000);
+    fn test_parse_elf_header() {
+        let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
+        parser.read_elf_file_into_buffer();
+        parser.parse_header();
     }
 }

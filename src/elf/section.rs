@@ -95,6 +95,11 @@ pub struct Elf64Shdr {
     ent_size: Elf64Xword,
 }
 
+pub enum ElfSection {
+    ElfSection32(Elf32Shdr),
+    ElfSection64(Elf64Shdr),
+}
+
 // ================================================== SYMBOLS ====================================================================== //
 
 #[derive(Debug)]

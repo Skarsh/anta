@@ -4,41 +4,65 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::upper_case_acronyms)]
 
-use super::types::*;
+use super::{error::ElfParseError, types::*};
 
-const ELFMAG0: u8 = 0x7f;
-const ELFMAG1: u8 = 0x45;
-const ELFMAG2: u8 = 0x4c;
-const ELFMAG3: u8 = 0x46;
+pub const ELFMAG0: u8 = 0x7f;
+pub const ELFMAG1: u8 = 0x45;
+pub const ELFMAG2: u8 = 0x4c;
+pub const ELFMAG3: u8 = 0x46;
 
-const EI_MAG0_IDX: usize = 0;
-const EI_MAG1_IDX: usize = 1;
-const EI_MAG2_IDX: usize = 2;
-const EI_MAG3_IDX: usize = 3;
-const EI_CLASS_IDX: usize = 4;
-const EI_DATA_IDX: usize = 5;
-const EI_VERSION_IDX: usize = 6;
-const EI_OSABI_IDX: usize = 7;
-const EI_ABIVERSION_IDX: usize = 8;
-const EI_PAD_IDX: usize = 9;
-const EI_NIDENT: usize = 16;
+pub const EI_MAG0_IDX: usize = 0;
+pub const EI_MAG1_IDX: usize = 1;
+pub const EI_MAG2_IDX: usize = 2;
+pub const EI_MAG3_IDX: usize = 3;
+pub const EI_CLASS_IDX: usize = 4;
+pub const EI_DATA_IDX: usize = 5;
+pub const EI_VERSION_IDX: usize = 6;
+pub const EI_OSABI_IDX: usize = 7;
+pub const EI_ABIVERSION_IDX: usize = 8;
+pub const EI_PAD_IDX: usize = 9;
+pub const EI_NIDENT: usize = 16;
 
-const ELF_IDENT_PAD_SIZE: usize = 7;
+pub const ELF_IDENT_PAD_SIZE: usize = 7;
 
 #[derive(Debug)]
 #[repr(u8)]
-enum Class {
+pub enum Class {
     ElfClassNone = 0,
     ElfClass32 = 1,
     ElfClass64 = 2,
 }
 
+impl TryFrom<u8> for Class {
+    type Error = ElfParseError;
+    fn try_from(val: u8) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(Class::ElfClassNone),
+            1 => Ok(Class::ElfClass32),
+            2 => Ok(Class::ElfClass64),
+            _ => Err(ElfParseError::InvalidElfClass),
+        }
+    }
+}
+
 #[derive(Debug)]
 #[repr(u8)]
-enum Data {
+pub enum Data {
     ElfDataNone = 0,
     ElfData2Lsb = 1,
     ElfData2Msb = 2,
+}
+
+impl TryFrom<u8> for Data {
+    type Error = ElfParseError;
+    fn try_from(val: u8) -> Result<Self, Self::Error> {
+        match val {
+            0 => Ok(Data::ElfDataNone),
+            1 => Ok(Data::ElfData2Lsb),
+            2 => Ok(Data::ElfData2Msb),
+            _ => Err(ElfParseError::InvalidElfData),
+        }
+    }
 }
 
 /// The version number of the ELF specification

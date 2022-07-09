@@ -1,3 +1,6 @@
+// TODO: remove
+#![allow(dead_code)]
+
 use std::array::TryFromSliceError;
 use std::error::Error;
 use std::fmt::Display;
@@ -6,6 +9,8 @@ use std::fmt::Display;
 pub enum ElfParseError {
     InvalidMagicBytes,
     BytesConversion(TryFromSliceError),
+    InvalidElfClass,
+    InvalidElfData,
 }
 
 impl ElfParseError {
@@ -13,6 +18,8 @@ impl ElfParseError {
         match *self {
             ElfParseError::InvalidMagicBytes => "invalid magic bytes, this is not an elf file",
             ElfParseError::BytesConversion(_) => "failed to convert bytes to type or machine enum",
+            ElfParseError::InvalidElfClass => "invalid elf class",
+            ElfParseError::InvalidElfData => "invalid elf data",
         }
     }
 }
