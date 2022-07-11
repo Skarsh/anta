@@ -69,7 +69,7 @@ impl TryFrom<u8> for Data {
 /// Currently this must be EVCurrent
 #[derive(Debug, PartialEq, Eq)]
 #[repr(u8)]
-enum Version {
+pub enum Version {
     None = 0,
     Current = 1,
 }
@@ -310,7 +310,7 @@ pub struct Elf32Ehdr {
     pub ident: Ident,
     pub elf_type: ElfType,
     pub machine: Machine,
-    pub version: Elf32Word,
+    pub version: Version,
     pub entry: Elf32Addr,
     pub ph_off: Elf32Off,
     pub sh_off: Elf32Off,
@@ -330,7 +330,7 @@ pub struct Elf64Ehdr {
     pub ident: Ident,
     pub elf_type: ElfType,
     pub machine: Machine,
-    pub version: Elf64Word,
+    pub version: Version,
     pub entry: Elf64Addr,
     pub ph_off: Elf64Off,
     pub sh_off: Elf64Off,
@@ -343,9 +343,10 @@ pub struct Elf64Ehdr {
     pub sh_str_ndx: Elf64Half,
 }
 
-pub enum ElfHeader {
-    Elf32(Elf32Ehdr),
-    Elf64(Elf64Ehdr),
+#[derive(Debug)]
+pub enum ElfHeader<'a> {
+    Elf32(&'a Elf32Ehdr),
+    Elf64(&'a Elf64Ehdr),
 }
 
 /// Checks whether the EIDENT bytes has valid values

@@ -2,7 +2,9 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use super::header::{self, validate_elf_ident, Class, Data, ElfHeader, EI_CLASS_IDX, EI_DATA_IDX};
+use super::header::*;
+use super::section::{Elf32Shdr, Elf64Shdr, ElfSection};
+use super::types::Elf32Section;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -28,16 +30,65 @@ impl<'a> ElfParser<'a> {
         file.read_to_end(&mut self.file_bytes).unwrap();
     }
 
-    pub fn parse_header(&mut self) -> ElfHeader {
+    pub fn parse_header(&self) -> ElfHeader {
         let class_byte = self.file_bytes[EI_CLASS_IDX];
         let class = Class::try_from(class_byte).unwrap();
-        println!("{:?}", class);
 
         let data_byte = self.file_bytes[EI_DATA_IDX];
         let _data = Data::try_from(data_byte).unwrap();
 
-        todo!();
+        // Need to know whether the Elf file 64-bit or 32-bit
+        // and which endianness we its represented in before parsing
+        match class {
+            Class::ElfClassNone => panic!(),
+            Class::ElfClass32 => {
+                let (head, body, _tail) = unsafe { self.file_bytes.align_to::<Elf32Ehdr>() };
+                assert!(head.is_empty(), "Data was not aligned");
+                let elf_32_ehdr = &body[0];
+                assert!(validate_elf_ident(&elf_32_ehdr.ident));
+                ElfHeader::Elf32(elf_32_ehdr)
+            }
+            Class::ElfClass64 => {
+                let (head, body, _tail) = unsafe { self.file_bytes.align_to::<Elf64Ehdr>() };
+                assert!(head.is_empty(), "Data was not aligned");
+                let elf_64_ehdr = &body[0];
+                assert!(validate_elf_ident(&elf_64_ehdr.ident));
+                ElfHeader::Elf64(elf_64_ehdr)
+            }
+        }
+    }
 
+    pub fn parse_section_headers(&self, elf_header: ElfHeader) -> Vec<ElfSection> {
+        let mut section_header_entries = Vec::new();
+        match elf_header {
+            ElfHeader::Elf32(header) => {
+                let mut entry_offset: usize = header.sh_off.try_into().unwrap();
+                for _entry in 1..=header.sh_num {
+                    let entry_slice =
+                        &self.file_bytes[entry_offset..entry_offset + header.sh_ent_size as usize];
+                    // TODO: Error handling, what if data is not aligned
+                    let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf32Shdr>() };
+                    let section_header = &body[0];
+                    section_header_entries.push(ElfSection::ElfSection32(section_header));
+
+                    entry_offset += header.sh_ent_size as usize;
+                }
+            }
+            ElfHeader::Elf64(header) => {
+                let mut entry_offset: usize = header.sh_off.try_into().unwrap();
+                for _entry in 1..=header.sh_num {
+                    let entry_slice =
+                        &self.file_bytes[entry_offset..entry_offset + header.sh_ent_size as usize];
+                    // TODO: Error handling, what if data is not aligned
+                    let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf64Shdr>() };
+                    let section_header = &body[0];
+                    section_header_entries.push(ElfSection::ElfSection64(section_header));
+
+                    entry_offset += header.sh_ent_size as usize;
+                }
+            }
+        }
+        section_header_entries
     }
 }
 
@@ -62,11 +113,34 @@ mod test {
         assert_eq!(parser.file_bytes.len(), expected_file_size);
     }
 
-    #[should_panic]
     #[test]
-    fn test_parse_elf_header() {
+    fn test_parse_elf64_header() {
         let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
         parser.read_elf_file_into_buffer();
-        parser.parse_header();
+        // These asertions are of course very thightly linked to the test file
+        if let ElfHeader::Elf64(header) = parser.parse_header() {
+            assert_eq!(header.elf_type, ElfType::Exec);
+            assert_eq!(header.machine, Machine::X86_64);
+            assert_eq!(header.version, Version::Current);
+            assert_eq!(header.entry, 0x401000);
+            assert_eq!(header.ph_off, 64);
+            assert_eq!(header.sh_off, 8528);
+            assert_eq!(header.flags, 0x0);
+            assert_eq!(header.eh_size, 64);
+            assert_eq!(header.ph_ent_size, 56);
+            assert_eq!(header.ph_num, 3);
+            assert_eq!(header.sh_ent_size, 64);
+            assert_eq!(header.sh_num, 6);
+            assert_eq!(header.sh_str_ndx, 5);
+        }
+    }
+
+    #[test]
+    fn test_parse_section_headers() {
+        let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
+        parser.read_elf_file_into_buffer();
+        let elf_header = parser.parse_header();
+        let section_headers = parser.parse_section_headers(elf_header);
+        println!("section_headers: {:?}", section_headers);
     }
 }
