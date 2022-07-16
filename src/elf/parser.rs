@@ -3,7 +3,7 @@
 #![allow(unused_imports)]
 
 use super::header::*;
-use super::section::{Elf32Shdr, Elf64Shdr, ElfSection};
+use super::section::{Elf32Shdr, Elf64SectionFlags, Elf64Shdr, ElfSectionHeader, ElfSectionType};
 use super::types::Elf32Section;
 use std::fs::File;
 use std::io::Read;
@@ -58,7 +58,7 @@ impl<'a> ElfParser<'a> {
         }
     }
 
-    pub fn parse_section_headers(&self, elf_header: ElfHeader) -> Vec<ElfSection> {
+    pub fn parse_section_headers(&self, elf_header: ElfHeader) -> Vec<ElfSectionHeader> {
         let mut section_header_entries = Vec::new();
         match elf_header {
             ElfHeader::Elf32(header) => {
@@ -69,7 +69,8 @@ impl<'a> ElfParser<'a> {
                     // TODO: Error handling, what if data is not aligned
                     let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf32Shdr>() };
                     let section_header = &body[0];
-                    section_header_entries.push(ElfSection::ElfSection32(section_header));
+                    section_header_entries
+                        .push(ElfSectionHeader::ElfSectionHeader32(section_header));
 
                     entry_offset += header.sh_ent_size as usize;
                 }
@@ -82,7 +83,8 @@ impl<'a> ElfParser<'a> {
                     // TODO: Error handling, what if data is not aligned
                     let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf64Shdr>() };
                     let section_header = &body[0];
-                    section_header_entries.push(ElfSection::ElfSection64(section_header));
+                    section_header_entries
+                        .push(ElfSectionHeader::ElfSectionHeader64(section_header));
 
                     entry_offset += header.sh_ent_size as usize;
                 }
@@ -141,6 +143,93 @@ mod test {
         parser.read_elf_file_into_buffer();
         let elf_header = parser.parse_header();
         let section_headers = parser.parse_section_headers(elf_header);
-        println!("section_headers: {:?}", section_headers);
+        assert_eq!(section_headers.len(), 6);
+        for section_header in &section_headers {
+            println!("{:?}", section_header)
+        }
+
+        // First entry
+        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[0] {
+            assert_eq!(section_header.sh_type, ElfSectionType::Null);
+            assert_eq!(section_header.flags, Elf64SectionFlags::empty());
+            assert_eq!(section_header.addr, 0x0);
+            assert_eq!(section_header.offset, 0x0);
+            assert_eq!(section_header.size, 0x0);
+            assert_eq!(section_header.link, 0);
+            assert_eq!(section_header.info, 0);
+            assert_eq!(section_header.addr_align, 0);
+            assert_eq!(section_header.ent_size, 0x0);
+        }
+
+        // Second entry
+        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[1] {
+            assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
+            assert_eq!(
+                section_header.flags,
+                Elf64SectionFlags::ALLOC | Elf64SectionFlags::EXECINSTR
+            );
+            assert_eq!(section_header.addr, 0x0000000000401000);
+            assert_eq!(section_header.offset, 0x00001000);
+            assert_eq!(section_header.size, 0x0000000000000025);
+            assert_eq!(section_header.link, 0);
+            assert_eq!(section_header.info, 0);
+            assert_eq!(section_header.addr_align, 16);
+            assert_eq!(section_header.ent_size, 0x0000000000000000);
+        }
+
+        // Third entry
+        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[2] {
+            assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
+            assert_eq!(
+                section_header.flags,
+                Elf64SectionFlags::WRITE | Elf64SectionFlags::ALLOC
+            );
+            assert_eq!(section_header.addr, 0x0000000000402000);
+            assert_eq!(section_header.offset, 0x00002000);
+            assert_eq!(section_header.size, 0x0000000000000009);
+            assert_eq!(section_header.link, 0);
+            assert_eq!(section_header.info, 0);
+            assert_eq!(section_header.addr_align, 4);
+            assert_eq!(section_header.ent_size, 0x0000000000000000);
+        }
+
+        // Fourth entry
+        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[3] {
+            assert_eq!(section_header.sh_type, ElfSectionType::SymTab);
+            assert_eq!(section_header.flags, Elf64SectionFlags::empty());
+            assert_eq!(section_header.addr, 0x0000000000000000);
+            assert_eq!(section_header.offset, 0x00002010);
+            assert_eq!(section_header.size, 0x00000000000000d8);
+            assert_eq!(section_header.link, 4);
+            assert_eq!(section_header.info, 5);
+            assert_eq!(section_header.addr_align, 8);
+            assert_eq!(section_header.ent_size, 0x0000000000000018);
+        }
+
+        // Fifth
+        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[4] {
+            assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
+            assert_eq!(section_header.flags, Elf64SectionFlags::empty());
+            assert_eq!(section_header.addr, 0x0000000000000000);
+            assert_eq!(section_header.offset, 0x000020e8);
+            assert_eq!(section_header.size, 0x000000000000003e);
+            assert_eq!(section_header.link, 0);
+            assert_eq!(section_header.info, 0);
+            assert_eq!(section_header.addr_align, 1);
+            assert_eq!(section_header.ent_size, 0x0000000000000000);
+        }
+
+        // Sixth
+        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[5] {
+            assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
+            assert_eq!(section_header.flags, Elf64SectionFlags::empty());
+            assert_eq!(section_header.addr, 0x0000000000000000);
+            assert_eq!(section_header.offset, 0x00002126);
+            assert_eq!(section_header.size, 0x0000000000000027);
+            assert_eq!(section_header.link, 0);
+            assert_eq!(section_header.info, 0);
+            assert_eq!(section_header.addr_align, 1);
+            assert_eq!(section_header.ent_size, 0x0000000000000000);
+        }
     }
 }

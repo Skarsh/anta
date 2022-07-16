@@ -1,9 +1,11 @@
 // TODO: remove
 #![allow(dead_code)]
 
+use bitflags::bitflags;
+
 use super::types::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum ElfSectionType {
     Null = 0,
@@ -31,38 +33,39 @@ pub enum ElfSectionType {
     HiUser = 0xffffffff,
 }
 
-#[derive(Debug)]
-#[repr(u32)]
-pub enum Elf32SectionFlag {
-    Write = 0x1,
-    Alloc = 0x2,
-    Execinstr = 0x4,
-    Merge = 0x10,
-    Strings = 0x20,
-    InfoLink = 0x40,
-    LinkOrder = 0x80,
-    OsNonconforming = 0x100,
-    Group = 0x200,
-    Tls = 0x400,
-    MaskOs = 0x0ff00000,
-    MaskProc = 0xf0000000,
+bitflags! {
+    pub struct Elf32SectionFlags: Elf32Word {
+        const WRITE = 0x1;
+        const ALLOC = 0x2;
+        const EXECINSTR = 0x4;
+        const MERGE = 0x10;
+        const STRINGS = 0x20;
+        const INFOLINK = 0x40;
+        const LINKORDER = 0x80;
+        const OSNONCONFORMING = 0x100;
+        const GROUP = 0x200;
+        const TLS = 0x400;
+        const MASKOS = 0x0ff00000;
+        const MASKPROC = 0xf0000000;
+    }
 }
 
-#[derive(Debug)]
-#[repr(u64)]
-pub enum Elf64SectionFlag {
-    Write = 0x1,
-    Alloc = 0x2,
-    Execinstr = 0x4,
-    Merge = 0x10,
-    Strings = 0x20,
-    InfoLink = 0x40,
-    LinkOrder = 0x80,
-    OsNonconforming = 0x100,
-    Group = 0x200,
-    Tls = 0x400,
-    MaskOs = 0x0ff00000,
-    MaskProc = 0xf0000000,
+bitflags! {
+    pub struct Elf64SectionFlags: Elf64Xword {
+        const WRITE = 0x1;
+        const ALLOC = 0x2;
+        const EXECINSTR = 0x4;
+        const MERGE = 0x10;
+        const STRINGS = 0x20;
+        const INFOLINK = 0x40;
+        const LINKORDER = 0x80;
+        const OSNONCONFORMING = 0x100;
+        const GROUP = 0x200;
+        const TLS = 0x400;
+        const MASKOS = 0x0ff00000;
+        const MASKPROC = 0xf0000000;
+
+    }
 }
 
 #[derive(Debug)]
@@ -70,7 +73,7 @@ pub enum Elf64SectionFlag {
 pub struct Elf32Shdr {
     name: Elf32Word,
     sh_type: ElfSectionType,
-    flags: Elf32SectionFlag,
+    flags: Elf32SectionFlags,
     addr: Elf32Addr,
     offset: Elf32Off,
     size: Elf32Word,
@@ -83,22 +86,22 @@ pub struct Elf32Shdr {
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf64Shdr {
-    name: Elf64Word,
-    sh_type: ElfSectionType,
-    flags: Elf64SectionFlag,
-    addr: Elf64Addr,
-    offset: Elf64Off,
-    size: Elf64Xword,
-    link: Elf64Word,
-    info: Elf64Word,
-    addr_align: Elf64Xword,
-    ent_size: Elf64Xword,
+    pub name: Elf64Word,
+    pub sh_type: ElfSectionType,
+    pub flags: Elf64SectionFlags,
+    pub addr: Elf64Addr,
+    pub offset: Elf64Off,
+    pub size: Elf64Xword,
+    pub link: Elf64Word,
+    pub info: Elf64Word,
+    pub addr_align: Elf64Xword,
+    pub ent_size: Elf64Xword,
 }
 
 #[derive(Debug)]
-pub enum ElfSection<'a> {
-    ElfSection32(&'a Elf32Shdr),
-    ElfSection64(&'a Elf64Shdr),
+pub enum ElfSectionHeader<'a> {
+    ElfSectionHeader32(&'a Elf32Shdr),
+    ElfSectionHeader64(&'a Elf64Shdr),
 }
 
 // ================================================== SYMBOLS ====================================================================== //
