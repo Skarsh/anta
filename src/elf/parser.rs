@@ -4,7 +4,7 @@
 
 use super::header::*;
 use super::section::{Elf32Shdr, Elf64SectionFlags, Elf64Shdr, ElfSectionHeader, ElfSectionType};
-use super::types::Elf32Section;
+use super::types::{Elf32Section, Elf64Section};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -91,6 +91,19 @@ impl<'a> ElfParser<'a> {
             }
         }
         section_header_entries
+    }
+
+    pub fn parse_section_name(
+        &self,
+        string_table_section_header: &ElfSectionHeader,
+        _current_section_header: &ElfSectionHeader,
+    ) {
+        match string_table_section_header {
+            ElfSectionHeader::ElfSectionHeader32(header) => {
+                let _string_table_start_byte_ndx = header.offset;
+            }
+            ElfSectionHeader::ElfSectionHeader64(_header) => {}
+        }
     }
 }
 

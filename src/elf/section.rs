@@ -71,16 +71,16 @@ bitflags! {
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf32Shdr {
-    name: Elf32Word,
-    sh_type: ElfSectionType,
-    flags: Elf32SectionFlags,
-    addr: Elf32Addr,
-    offset: Elf32Off,
-    size: Elf32Word,
-    link: Elf32Word,
-    info: Elf32Word,
-    addr_align: Elf32Word,
-    ent_size: Elf32Word,
+    pub name: Elf32Word,
+    pub sh_type: ElfSectionType,
+    pub flags: Elf32SectionFlags,
+    pub addr: Elf32Addr,
+    pub offset: Elf32Off,
+    pub size: Elf32Word,
+    pub link: Elf32Word,
+    pub info: Elf32Word,
+    pub addr_align: Elf32Word,
+    pub ent_size: Elf32Word,
 }
 
 #[derive(Debug)]
