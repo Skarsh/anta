@@ -100,8 +100,8 @@ pub struct Elf64Shdr {
 
 #[derive(Debug)]
 pub enum ElfSectionHeader<'a> {
-    ElfSectionHeader32(&'a Elf32Shdr),
-    ElfSectionHeader64(&'a Elf64Shdr),
+    Section32(&'a Elf32Shdr),
+    Section64(&'a Elf64Shdr),
 }
 
 // ================================================== SYMBOLS ====================================================================== //
@@ -124,94 +124,4 @@ pub struct Elf64Sym {
     shndx: Elf64Half,
     value: Elf64Addr,
     size: Elf64Xword,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::super::header::*;
-    use super::*;
-    use std::fs::File;
-    use std::io::prelude::*;
-
-    #[test]
-    fn parse_section_headers() {
-        let mut f = File::open("samples/bin/hello").unwrap();
-        let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
-
-        let (head, body, _tail) = unsafe { buffer.align_to::<Elf64Ehdr>() };
-        assert!(head.is_empty(), "Data was not aligned");
-        let elf_64_ehdr = &body[0];
-        assert!(validate_elf_ident(&elf_64_ehdr.ident));
-
-        assert_eq!(elf_64_ehdr.elf_type, ElfType::Exec);
-        assert_eq!(elf_64_ehdr.machine, Machine::X86_64);
-
-        //println!("elf header: {:?}", elf_64_ehdr);
-        println!(
-            "offset to the section header table: {:x}",
-            elf_64_ehdr.sh_off
-        );
-        println!(
-            "number of entries in the section header table: {}",
-            elf_64_ehdr.sh_num
-        );
-        println!("section header entry size: {}", elf_64_ehdr.sh_ent_size);
-
-        let mut offset: usize = elf_64_ehdr.sh_off.try_into().unwrap();
-        let mut section_header_entries = Vec::new();
-        for _i in 1..=elf_64_ehdr.sh_num {
-            let entry_slice = &buffer[offset..offset + elf_64_ehdr.sh_ent_size as usize];
-            let (head, body, _tail) = unsafe { entry_slice.align_to::<Elf64Shdr>() };
-            assert!(head.is_empty());
-            let elf_64_shdr = &body[0];
-            section_header_entries.push(elf_64_shdr);
-
-            // Increase the offset for parsing the next entry
-            // in the section header table
-            offset += elf_64_ehdr.sh_ent_size as usize;
-        }
-
-        let string_table_section_header_entry =
-            section_header_entries[elf_64_ehdr.sh_str_ndx as usize];
-
-        let string_table_start_byte_ndx = string_table_section_header_entry.offset;
-        let string_table_end_byte_ndx =
-            string_table_start_byte_ndx + string_table_section_header_entry.size;
-        let string_table_buffer_slice =
-            &buffer[string_table_start_byte_ndx as usize..string_table_end_byte_ndx as usize];
-
-        let first_string_table_byte = string_table_buffer_slice[0];
-        println!("first string table byte {}", first_string_table_byte);
-        let first_string_byte =
-            string_table_buffer_slice[string_table_section_header_entry.name as usize];
-        println!("first_string_byte {}", first_string_byte);
-
-        let mut done = false;
-        let mut current_index = string_table_section_header_entry.name as usize;
-
-        while !done {
-            let current_string_byte = string_table_buffer_slice[current_index];
-            if current_string_byte == 0 {
-                done = true;
-                break;
-            }
-            current_index += 1;
-        }
-
-        // Prevent weird linting issued saying `done` is never used.
-        let _ = done;
-
-        let string_slice = &string_table_buffer_slice
-            [string_table_section_header_entry.name as usize..current_index as usize];
-        println!("string slice {:?}", string_slice);
-
-        let string_slice_string = match std::str::from_utf8(string_slice) {
-            Ok(v) => v,
-            Err(e) => panic!("Invalid UTF-8 sequence {}", e),
-        };
-
-        println!("result {}", string_slice_string);
-        assert_eq!(string_slice_string, ".shstrtab");
-    }
 }

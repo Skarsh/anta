@@ -4,7 +4,7 @@
 
 use super::header::*;
 use super::section::{Elf32Shdr, Elf64SectionFlags, Elf64Shdr, ElfSectionHeader, ElfSectionType};
-use super::types::{Elf32Section, Elf64Section};
+use super::types::{Elf32Section, Elf64Section, Elf64Word};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -58,10 +58,11 @@ impl<'a> ElfParser<'a> {
         }
     }
 
-    pub fn parse_section_headers(&self, elf_header: ElfHeader) -> Vec<ElfSectionHeader> {
-        let mut section_header_entries = Vec::new();
+    pub fn parse_section_headers(&self, elf_header: &ElfHeader) -> Vec<ElfSectionHeader> {
+        let mut section_header_entries;
         match elf_header {
             ElfHeader::Elf32(header) => {
+                section_header_entries = Vec::with_capacity(header.sh_num as usize);
                 let mut entry_offset: usize = header.sh_off.try_into().unwrap();
                 for _entry in 1..=header.sh_num {
                     let entry_slice =
@@ -69,13 +70,13 @@ impl<'a> ElfParser<'a> {
                     // TODO: Error handling, what if data is not aligned
                     let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf32Shdr>() };
                     let section_header = &body[0];
-                    section_header_entries
-                        .push(ElfSectionHeader::ElfSectionHeader32(section_header));
+                    section_header_entries.push(ElfSectionHeader::Section32(section_header));
 
                     entry_offset += header.sh_ent_size as usize;
                 }
             }
             ElfHeader::Elf64(header) => {
+                section_header_entries = Vec::with_capacity(header.sh_num as usize);
                 let mut entry_offset: usize = header.sh_off.try_into().unwrap();
                 for _entry in 1..=header.sh_num {
                     let entry_slice =
@@ -83,8 +84,7 @@ impl<'a> ElfParser<'a> {
                     // TODO: Error handling, what if data is not aligned
                     let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf64Shdr>() };
                     let section_header = &body[0];
-                    section_header_entries
-                        .push(ElfSectionHeader::ElfSectionHeader64(section_header));
+                    section_header_entries.push(ElfSectionHeader::Section64(section_header));
 
                     entry_offset += header.sh_ent_size as usize;
                 }
@@ -93,24 +93,63 @@ impl<'a> ElfParser<'a> {
         section_header_entries
     }
 
+    pub fn get_string_table_slice(
+        &self,
+        elf_header: &ElfHeader,
+        section_headers: &[ElfSectionHeader],
+    ) -> &[u8] {
+        match elf_header {
+            ElfHeader::Elf32(header) => match section_headers[header.sh_str_ndx as usize] {
+                ElfSectionHeader::Section32(section_header) => {
+                    &self.file_bytes[section_header.offset as usize
+                        ..(section_header.offset + section_header.size) as usize]
+                }
+                ElfSectionHeader::Section64(_) => {
+                    panic!("A 32-bit elf file should not contain 64-bit section header")
+                }
+            },
+            ElfHeader::Elf64(header) => match section_headers[header.sh_str_ndx as usize] {
+                ElfSectionHeader::Section32(_) => {
+                    panic!("A 64-bit elf file should not contain 32-bit section header")
+                }
+                ElfSectionHeader::Section64(section_header) => {
+                    &self.file_bytes[section_header.offset as usize
+                        ..(section_header.offset + section_header.size) as usize]
+                }
+            },
+        }
+    }
+
     pub fn parse_section_name(
         &self,
-        string_table_section_header: &ElfSectionHeader,
-        _current_section_header: &ElfSectionHeader,
-    ) {
-        match string_table_section_header {
-            ElfSectionHeader::ElfSectionHeader32(header) => {
-                let _string_table_start_byte_ndx = header.offset;
+        name_start_ndx: Elf64Word,
+        string_table_slice: &'a [u8],
+    ) -> &'a str {
+        println!("name_start_ndx: {}", name_start_ndx);
+        let mut done = false;
+        let mut name_end_ndx = name_start_ndx;
+        for byte in &string_table_slice[name_start_ndx as usize..] {
+            if byte == &0 {
+                done = true;
+                break;
             }
-            ElfSectionHeader::ElfSectionHeader64(_header) => {}
+            name_end_ndx += 1;
         }
+        println!("name_end_ndx: {}", name_end_ndx);
+        let _ = done;
+        let string_slice = &string_table_slice[name_start_ndx as usize..name_end_ndx as usize];
+        let section_name = match std::str::from_utf8(string_slice) {
+            Ok(v) => v,
+            Err(e) => panic!("Invalid UTF-8 sequence {}", e),
+        };
+        section_name
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::path::Path;
+    use std::{path::Path, usize};
 
     #[test]
     fn new_parser() {
@@ -132,7 +171,7 @@ mod test {
     fn test_parse_elf64_header() {
         let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
         parser.read_elf_file_into_buffer();
-        // These asertions are of course very thightly linked to the test file
+        // These asertions are very thightly linked to the test file
         if let ElfHeader::Elf64(header) = parser.parse_header() {
             assert_eq!(header.elf_type, ElfType::Exec);
             assert_eq!(header.machine, Machine::X86_64);
@@ -155,14 +194,15 @@ mod test {
         let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
         parser.read_elf_file_into_buffer();
         let elf_header = parser.parse_header();
-        let section_headers = parser.parse_section_headers(elf_header);
+        let section_headers = parser.parse_section_headers(&elf_header);
         assert_eq!(section_headers.len(), 6);
-        for section_header in &section_headers {
-            println!("{:?}", section_header)
-        }
 
-        // First entry
-        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[0] {
+        let string_table_slice = parser.get_string_table_slice(&elf_header, &section_headers);
+
+        // 0 index
+        if let ElfSectionHeader::Section64(section_header) = &section_headers[0] {
+            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            assert_eq!(section_name, "");
             assert_eq!(section_header.sh_type, ElfSectionType::Null);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
             assert_eq!(section_header.addr, 0x0);
@@ -174,8 +214,10 @@ mod test {
             assert_eq!(section_header.ent_size, 0x0);
         }
 
-        // Second entry
-        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[1] {
+        // 1 index
+        if let ElfSectionHeader::Section64(section_header) = &section_headers[1] {
+            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            assert_eq!(section_name, ".text");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
                 section_header.flags,
@@ -190,8 +232,10 @@ mod test {
             assert_eq!(section_header.ent_size, 0x0000000000000000);
         }
 
-        // Third entry
-        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[2] {
+        // 2 index
+        if let ElfSectionHeader::Section64(section_header) = &section_headers[2] {
+            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            assert_eq!(section_name, ".data");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
                 section_header.flags,
@@ -206,8 +250,10 @@ mod test {
             assert_eq!(section_header.ent_size, 0x0000000000000000);
         }
 
-        // Fourth entry
-        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[3] {
+        // 3 index
+        if let ElfSectionHeader::Section64(section_header) = &section_headers[3] {
+            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            assert_eq!(section_name, ".symtab");
             assert_eq!(section_header.sh_type, ElfSectionType::SymTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
             assert_eq!(section_header.addr, 0x0000000000000000);
@@ -219,8 +265,10 @@ mod test {
             assert_eq!(section_header.ent_size, 0x0000000000000018);
         }
 
-        // Fifth
-        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[4] {
+        // 4 index
+        if let ElfSectionHeader::Section64(section_header) = &section_headers[4] {
+            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            assert_eq!(section_name, ".strtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
             assert_eq!(section_header.addr, 0x0000000000000000);
@@ -232,8 +280,10 @@ mod test {
             assert_eq!(section_header.ent_size, 0x0000000000000000);
         }
 
-        // Sixth
-        if let ElfSectionHeader::ElfSectionHeader64(section_header) = &section_headers[5] {
+        // 5 index
+        if let ElfSectionHeader::Section64(section_header) = &section_headers[5] {
+            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            assert_eq!(section_name, ".shstrtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
             assert_eq!(section_header.addr, 0x0000000000000000);
