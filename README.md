@@ -31,3 +31,15 @@ There are four possible commands that can be given to the debugger
 4. `memory` 
     - `read address(hex)`: Read memory from a specific address location
     - `write address(hex) value(hex)`: Write 'value' to memory location at 'address'
+
+## Roadmap 
+This section outlines the major milestones needed to reach a 1.0 version implementation
+- [ ] Elf Parser Library
+    - [x] Elf Header
+    - [x] Elf Sections
+    - [x] Elf String Table
+    - [ ] Split parsing functionality into own library crate
+- [ ] Dwarf Debug Symbols Parser Library
+- [ ] Debug backend 
+- [ ] Debug frontend
+
