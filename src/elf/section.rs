@@ -103,25 +103,3 @@ pub enum ElfSectionHeader<'a> {
     Section32(&'a Elf32Shdr),
     Section64(&'a Elf64Shdr),
 }
-
-// ================================================== SYMBOLS ====================================================================== //
-
-#[derive(Debug)]
-pub struct Elf32Sym {
-    name: Elf32Word,
-    value: Elf32Addr,
-    size: Elf32Word,
-    info: u8,
-    other: u8,
-    shndx: Elf32Half,
-}
-
-#[derive(Debug)]
-pub struct Elf64Sym {
-    name: Elf64Word,
-    info: u8,
-    other: u8,
-    shndx: Elf64Half,
-    value: Elf64Addr,
-    size: Elf64Xword,
-}
