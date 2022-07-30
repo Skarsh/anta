@@ -38,7 +38,7 @@ impl<'a> ElfParser<'a> {
         let _data = Data::try_from(data_byte).unwrap();
 
         // Need to know whether the Elf file 64-bit or 32-bit
-        // and which endianness we its represented in before parsing
+        // and which endianness its represented in before parsing
         match class {
             Class::ElfClassNone => panic!(),
             Class::ElfClass32 => {
