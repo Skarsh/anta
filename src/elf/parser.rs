@@ -93,7 +93,7 @@ impl<'a> ElfParser<'a> {
         section_header_entries
     }
 
-    pub fn get_string_table_slice(
+    pub fn get_sh_string_table_slice(
         &self,
         elf_header: &ElfHeader,
         section_headers: &[ElfSectionHeader],
@@ -197,11 +197,12 @@ mod test {
         let section_headers = parser.parse_section_headers(&elf_header);
         assert_eq!(section_headers.len(), 6);
 
-        let string_table_slice = parser.get_string_table_slice(&elf_header, &section_headers);
+        let sh_string_table_slice = parser.get_sh_string_table_slice(&elf_header, &section_headers);
 
         // 0 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[0] {
-            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            let section_name =
+                parser.parse_section_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, "");
             assert_eq!(section_header.sh_type, ElfSectionType::Null);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -216,7 +217,8 @@ mod test {
 
         // 1 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[1] {
-            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            let section_name =
+                parser.parse_section_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".text");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
@@ -234,7 +236,8 @@ mod test {
 
         // 2 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[2] {
-            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            let section_name =
+                parser.parse_section_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".data");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
@@ -252,7 +255,8 @@ mod test {
 
         // 3 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[3] {
-            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            let section_name =
+                parser.parse_section_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".symtab");
             assert_eq!(section_header.sh_type, ElfSectionType::SymTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -267,7 +271,8 @@ mod test {
 
         // 4 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[4] {
-            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            let section_name =
+                parser.parse_section_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".strtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -282,7 +287,8 @@ mod test {
 
         // 5 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[5] {
-            let section_name = parser.parse_section_name(section_header.name, string_table_slice);
+            let section_name =
+                parser.parse_section_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".shstrtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
