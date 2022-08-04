@@ -148,7 +148,7 @@ impl<'a> ElfParser<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::elf::symbol::{Elf64Sym, ElfSym};
+    use crate::elf::symbol::{Elf64Sym, ElfSym, Info, Visibility};
 
     use super::*;
     use std::{mem::size_of, path::Path, usize};
@@ -334,6 +334,12 @@ mod test {
             }
             assert_eq!(symbols.len(), 9);
             println!("{:?}", symbols);
+
+            if let ElfSym::Sym64(sym) = symbols[0] {
+                println!("binding: {:?}", sym.bind());
+                println!("type: {:?}", sym.r#type());
+                println!("visibility: {:?}", sym.visibility());
+            }
         }
     }
 }
