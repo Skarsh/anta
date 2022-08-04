@@ -28,3 +28,33 @@ pub struct Elf64Sym {
     value: Elf64Addr,
     size: Elf64Xword,
 }
+
+#[derive(Debug)]
+#[repr(u8)]
+#[allow(dead_code)]
+pub enum SymBinding {
+    Local = 0,
+    Global = 1,
+    Weak = 2,
+    LoOs = 10,
+    HiOs = 12,
+    LoProc = 13,
+    HiProc = 15,
+}
+
+#[derive(Debug)]
+#[repr(u8)]
+#[allow(dead_code)]
+pub enum SymType {
+    NoType = 0,
+    Object = 1,
+    Func = 2,
+    Section = 3,
+    File = 4,
+    Common = 5,
+    Tls = 6,
+    LoOs = 10,
+    HiOs = 12,
+    LoProc = 13,
+    HiProc = 15,
+}

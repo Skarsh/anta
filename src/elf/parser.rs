@@ -148,8 +148,10 @@ impl<'a> ElfParser<'a> {
 
 #[cfg(test)]
 mod test {
+    use crate::elf::symbol::{Elf64Sym, ElfSym};
+
     use super::*;
-    use std::{path::Path, usize};
+    use std::{mem::size_of, path::Path, usize};
 
     #[test]
     fn new_parser() {
@@ -299,6 +301,39 @@ mod test {
             assert_eq!(section_header.info, 0);
             assert_eq!(section_header.addr_align, 1);
             assert_eq!(section_header.ent_size, 0x0000000000000000);
+        }
+    }
+
+    #[test]
+    fn test_parse_symbols() {
+        let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
+        parser.read_elf_file_into_buffer();
+        let elf_header = parser.parse_header();
+        let section_headers = parser.parse_section_headers(&elf_header);
+        assert_eq!(section_headers.len(), 6);
+
+        if let ElfSectionHeader::Section64(section) = section_headers[3] {
+            let sh_string_table_slice =
+                parser.get_sh_string_table_slice(&elf_header, &section_headers);
+            let section_name = parser.parse_section_name(section.name, sh_string_table_slice);
+            assert_eq!(section_name, ".symtab");
+            let section_bytes = &parser.file_bytes
+                [section.offset as usize..(section.offset + section.size) as usize];
+            assert_eq!(section_bytes.len() % size_of::<Elf64Sym>(), 0);
+
+            let mut symbols = Vec::new();
+            let mut symbol_offset: usize = section.offset.try_into().unwrap();
+            let num_sections = section_bytes.len() / size_of::<Elf64Sym>();
+            for _symbol in 0..num_sections {
+                let symbol_slice =
+                    &parser.file_bytes[symbol_offset..symbol_offset + size_of::<Elf64Sym>()];
+                let (_head, body, _tail) = unsafe { symbol_slice.align_to::<Elf64Sym>() };
+                let symbol = &body[0];
+                symbols.push(ElfSym::Sym64(symbol));
+                symbol_offset += size_of::<Elf64Sym>();
+            }
+            assert_eq!(symbols.len(), 9);
+            println!("{:?}", symbols);
         }
     }
 }
