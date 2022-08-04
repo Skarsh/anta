@@ -39,9 +39,9 @@ This section outlines the major milestones needed to reach a 1.0 version impleme
     - [x] Elf Sections
     - [x] Elf SectionHeader String Table
     - [ ] Elf Symbols
-    - [ ] Split parsing functionality into own library crate
     - [ ] Program Header
     - [ ] Relocations
+    - [ ] Split parsing functionality into own library crate
 - [ ] Dwarf Debug Symbols Parser Library
 - [ ] Debug backend 
 - [ ] Debug frontend
