@@ -9,7 +9,7 @@ pub enum ElfSym<'a> {
     Sym64(&'a Elf64Sym),
 }
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, PartialEq, Eq)]
 #[repr(u8)]
 #[allow(dead_code)]
 pub enum SymBinding {
@@ -22,7 +22,7 @@ pub enum SymBinding {
     HiProc = 15,
 }
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, PartialEq, Eq)]
 #[repr(u8)]
 #[allow(dead_code)]
 pub enum SymType {
@@ -39,7 +39,7 @@ pub enum SymType {
     HiProc = 15,
 }
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, PartialEq, Eq)]
 #[repr(u8)]
 #[allow(dead_code)]
 pub enum SymVisibility {
@@ -62,12 +62,12 @@ pub trait Visibility {
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf32Sym {
-    name: Elf32Word,
-    value: Elf32Addr,
-    size: Elf32Word,
-    info: u8,
-    other: u8,
-    shndx: Elf32Half,
+    pub name: Elf32Word,
+    pub value: Elf32Addr,
+    pub size: Elf32Word,
+    pub info: u8,
+    pub other: u8,
+    pub shndx: Elf32Half,
 }
 
 impl Info for Elf32Sym {
@@ -96,12 +96,12 @@ impl Visibility for Elf32Sym {
 #[derive(Debug)]
 #[repr(C)]
 pub struct Elf64Sym {
-    name: Elf64Word,
-    info: u8,
-    other: u8,
-    shndx: Elf64Half,
-    value: Elf64Addr,
-    size: Elf64Xword,
+    pub name: Elf64Word,
+    pub info: u8,
+    pub other: u8,
+    pub shndx: Elf64Half,
+    pub value: Elf64Addr,
+    pub size: Elf64Xword,
 }
 
 impl Info for Elf64Sym {

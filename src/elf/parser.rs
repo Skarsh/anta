@@ -1,7 +1,6 @@
 // TODO: Remove
 #![allow(dead_code)]
 #![allow(unused_imports)]
-
 use super::header::*;
 use super::section::{Elf32Shdr, Elf64SectionFlags, Elf64Shdr, ElfSectionHeader, ElfSectionType};
 use super::types::{Elf32Section, Elf64Section, Elf64Word};
@@ -120,12 +119,34 @@ impl<'a> ElfParser<'a> {
         }
     }
 
-    pub fn parse_section_name(
-        &self,
-        name_start_ndx: Elf64Word,
-        string_table_slice: &'a [u8],
-    ) -> &'a str {
-        println!("name_start_ndx: {}", name_start_ndx);
+    pub fn get_string_table_slice(&self, section_headers: &[ElfSectionHeader]) -> Option<&[u8]> {
+        for sh in section_headers {
+            match sh {
+                ElfSectionHeader::Section32(header) => match header.sh_type {
+                    ElfSectionType::StrTab => {
+                        return Some(
+                            &self.file_bytes
+                                [header.offset as usize..(header.offset + header.size) as usize],
+                        );
+                    }
+                    _ => continue,
+                },
+                ElfSectionHeader::Section64(header) => match header.sh_type {
+                    ElfSectionType::StrTab => {
+                        return Some(
+                            &self.file_bytes
+                                [header.offset as usize..(header.offset + header.size) as usize],
+                        );
+                    }
+                    _ => continue,
+                },
+            }
+        }
+        None
+    }
+
+    // TODO: Make this generic for both 32-bit and 64-bit
+    pub fn parse_name(&self, name_start_ndx: Elf64Word, string_table_slice: &'a [u8]) -> &'a str {
         let mut done = false;
         let mut name_end_ndx = name_start_ndx;
         for byte in &string_table_slice[name_start_ndx as usize..] {
@@ -135,11 +156,11 @@ impl<'a> ElfParser<'a> {
             }
             name_end_ndx += 1;
         }
-        println!("name_end_ndx: {}", name_end_ndx);
         let _ = done;
         let string_slice = &string_table_slice[name_start_ndx as usize..name_end_ndx as usize];
         let section_name = match std::str::from_utf8(string_slice) {
             Ok(v) => v,
+            // TODO: Bad idea to panic here, should return Result error instead.
             Err(e) => panic!("Invalid UTF-8 sequence {}", e),
         };
         section_name
@@ -148,7 +169,9 @@ impl<'a> ElfParser<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::elf::symbol::{Elf64Sym, ElfSym, Info, Visibility};
+    use crate::elf::symbol::{
+        self, Elf64Sym, ElfSym, Info, SymBinding, SymType, SymVisibility, Visibility,
+    };
 
     use super::*;
     use std::{mem::size_of, path::Path, usize};
@@ -203,8 +226,7 @@ mod test {
 
         // 0 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[0] {
-            let section_name =
-                parser.parse_section_name(section_header.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, "");
             assert_eq!(section_header.sh_type, ElfSectionType::Null);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -219,8 +241,7 @@ mod test {
 
         // 1 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[1] {
-            let section_name =
-                parser.parse_section_name(section_header.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".text");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
@@ -238,8 +259,7 @@ mod test {
 
         // 2 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[2] {
-            let section_name =
-                parser.parse_section_name(section_header.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".data");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
@@ -257,8 +277,7 @@ mod test {
 
         // 3 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[3] {
-            let section_name =
-                parser.parse_section_name(section_header.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".symtab");
             assert_eq!(section_header.sh_type, ElfSectionType::SymTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -273,8 +292,7 @@ mod test {
 
         // 4 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[4] {
-            let section_name =
-                parser.parse_section_name(section_header.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".strtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -289,8 +307,7 @@ mod test {
 
         // 5 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[5] {
-            let section_name =
-                parser.parse_section_name(section_header.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
             assert_eq!(section_name, ".shstrtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -315,7 +332,7 @@ mod test {
         if let ElfSectionHeader::Section64(section) = section_headers[3] {
             let sh_string_table_slice =
                 parser.get_sh_string_table_slice(&elf_header, &section_headers);
-            let section_name = parser.parse_section_name(section.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section.name, sh_string_table_slice);
             assert_eq!(section_name, ".symtab");
             let section_bytes = &parser.file_bytes
                 [section.offset as usize..(section.offset + section.size) as usize];
@@ -333,12 +350,31 @@ mod test {
                 symbol_offset += size_of::<Elf64Sym>();
             }
             assert_eq!(symbols.len(), 9);
-            println!("{:?}", symbols);
 
+            let string_table_slice = parser.get_string_table_slice(&section_headers).unwrap();
+
+            // 0 index
             if let ElfSym::Sym64(sym) = symbols[0] {
-                println!("binding: {:?}", sym.bind());
-                println!("type: {:?}", sym.r#type());
-                println!("visibility: {:?}", sym.visibility());
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::NoType));
+                assert_eq!(sym.bind(), Some(SymBinding::Local));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(symbol_name, "");
+            }
+
+            // 1 index
+            if let ElfSym::Sym64(sym) = symbols[1] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                // TODO: BUG This assert should be right
+                //assert_eq!(sym.value, 401000);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::Section));
+                assert_eq!(sym.bind(), Some(SymBinding::Local));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(sym.shndx, 1);
+                assert_eq!(symbol_name, "");
             }
         }
     }
