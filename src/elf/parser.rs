@@ -356,7 +356,7 @@ mod test {
             // 0 index
             if let ElfSym::Sym64(sym) = symbols[0] {
                 let symbol_name = parser.parse_name(sym.name, string_table_slice);
-                assert_eq!(sym.value, 0);
+                assert_eq!(sym.value, 0x0);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::NoType));
                 assert_eq!(sym.bind(), Some(SymBinding::Local));
@@ -367,14 +367,97 @@ mod test {
             // 1 index
             if let ElfSym::Sym64(sym) = symbols[1] {
                 let symbol_name = parser.parse_name(sym.name, string_table_slice);
-                // TODO: BUG This assert should be right
-                //assert_eq!(sym.value, 401000);
+                assert_eq!(sym.value, 0x401000);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::Section));
                 assert_eq!(sym.bind(), Some(SymBinding::Local));
                 assert_eq!(sym.visibility(), Some(SymVisibility::Default));
                 assert_eq!(sym.shndx, 1);
                 assert_eq!(symbol_name, "");
+            }
+
+            // 2 index
+            if let ElfSym::Sym64(sym) = symbols[2] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0x402000);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::Section));
+                assert_eq!(sym.bind(), Some(SymBinding::Local));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(sym.shndx, 2);
+                assert_eq!(symbol_name, "");
+            }
+
+            // 3 index
+            if let ElfSym::Sym64(sym) = symbols[3] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0x0);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::File));
+                assert_eq!(sym.bind(), Some(SymBinding::Local));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                // We don't care about asserting shndx for the source file symbol
+                assert_eq!(symbol_name, "./samples/src/assembly/hello.asm");
+            }
+
+            // 4 index
+            if let ElfSym::Sym64(sym) = symbols[4] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0x402000);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::NoType));
+                assert_eq!(sym.bind(), Some(SymBinding::Local));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(sym.shndx, 2);
+                assert_eq!(symbol_name, "msg");
+            }
+
+            // 5 index
+            if let ElfSym::Sym64(sym) = symbols[5] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0x401000);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::NoType));
+                assert_eq!(sym.bind(), Some(SymBinding::Global));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(sym.shndx, 1);
+                assert_eq!(symbol_name, "_start");
+            }
+
+            // 6 index
+            if let ElfSym::Sym64(sym) = symbols[6] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0x402009);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::NoType));
+                assert_eq!(sym.bind(), Some(SymBinding::Global));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(sym.shndx, 2);
+                assert_eq!(symbol_name, "__bss_start");
+            }
+
+            // 7 index
+            if let ElfSym::Sym64(sym) = symbols[7] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0x402009);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::NoType));
+                assert_eq!(sym.bind(), Some(SymBinding::Global));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(sym.shndx, 2);
+                assert_eq!(symbol_name, "_edata");
+            }
+
+            // 8 index
+            if let ElfSym::Sym64(sym) = symbols[8] {
+                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                assert_eq!(sym.value, 0x402010);
+                assert_eq!(sym.size, 0);
+                assert_eq!(sym.r#type(), Some(SymType::NoType));
+                assert_eq!(sym.bind(), Some(SymBinding::Global));
+                assert_eq!(sym.visibility(), Some(SymVisibility::Default));
+                assert_eq!(sym.shndx, 2);
+                assert_eq!(symbol_name, "_end");
             }
         }
     }
