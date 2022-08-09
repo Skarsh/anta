@@ -1,2 +1,6 @@
+# VSCode
+.vscode/
+
+# Builds
 /target
 /c_samples
