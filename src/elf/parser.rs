@@ -1,8 +1,10 @@
 // TODO: Remove
 #![allow(dead_code)]
 #![allow(unused_imports)]
+use super::file::ElfFile;
 use super::header::*;
 use super::section::{Elf32Shdr, Elf64SectionFlags, Elf64Shdr, ElfSectionHeader, ElfSectionType};
+use super::symbol::ElfSym;
 use super::types::{Elf32Section, Elf64Section, Elf64Word};
 use std::fs::File;
 use std::io::Read;
@@ -27,6 +29,15 @@ impl<'a> ElfParser<'a> {
     pub fn read_elf_file_into_buffer(&mut self) {
         let mut file = File::open(self.file_path).unwrap();
         file.read_to_end(&mut self.file_bytes).unwrap();
+    }
+
+    pub fn parse_elf_file(&mut self) -> ElfFile {
+        self.read_elf_file_into_buffer();
+
+        let elf_header = self.parse_header();
+        let section_headers = self.parse_section_headers(&elf_header);
+
+        ElfFile::new(section_headers, Vec::<ElfSym>::new())
     }
 
     pub fn parse_header(&self) -> ElfHeader {
@@ -460,5 +471,12 @@ mod test {
                 assert_eq!(symbol_name, "_end");
             }
         }
+    }
+
+    #[test]
+    fn test_parse_elf_file() {
+        let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
+        let file = parser.parse_elf_file();
+        println!("file {:?}", file);
     }
 }
