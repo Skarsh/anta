@@ -38,7 +38,7 @@ This section outlines the major milestones needed to reach a 1.0 version impleme
     - [x] Elf Header
     - [x] Elf Sections
     - [x] Elf SectionHeader String Table
-    - [ ] Elf Symbols
+    - [x] Elf Symbols
     - [ ] Program Header
     - [ ] Relocations
     - [ ] Split parsing functionality into own library crate
