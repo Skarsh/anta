@@ -32,7 +32,7 @@ fn main() {
     let program_path_string = &args[1];
 
     let path = Path::new(&program_path_string);
-    let c_str_path = CString::new(&*path.to_str().unwrap()).expect("CString::new failed");
+    let c_str_path = CString::new(path.to_str().unwrap()).expect("CString::new failed");
 
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
