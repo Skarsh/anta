@@ -103,3 +103,12 @@ pub enum ElfSectionHeader<'a> {
     Section32(&'a Elf32Shdr),
     Section64(&'a Elf64Shdr),
 }
+
+// TODO: Think more about this
+#[derive(Debug)]
+pub struct Section<'a> {
+    name: &'a str,
+    r#type: ElfSectionType,
+    bytes: &'a [u8],
+    section_header: ElfSectionHeader<'a>,
+}
