@@ -48,7 +48,7 @@ impl<'a> ElfParser<'a> {
         for section_header in section_headers {
             match section_header {
                 ElfSectionHeader::Section32(header) => {
-                    let section_name = self.parse_name(header.name, sh_string_table_slice);
+                    let section_name = self.parse_name(header.name as usize, sh_string_table_slice);
                     let section_bytes = &self.file_bytes
                         [header.offset as usize..(header.offset + header.size) as usize];
                     sections.push(Section::new(
@@ -68,14 +68,15 @@ impl<'a> ElfParser<'a> {
                             let (_head, body, _tail) =
                                 unsafe { symbol_slice.align_to::<Elf32Sym>() };
                             let elf_sym = &body[0];
-                            let symbol_name = self.parse_name(elf_sym.name, string_table_slice);
+                            let symbol_name =
+                                self.parse_name(elf_sym.name as usize, string_table_slice);
                             symbols.push(Symbol::new(symbol_name, ElfSym::Sym32(elf_sym)));
                             symbol_offset += size_of::<Elf32Sym>();
                         }
                     }
                 }
                 ElfSectionHeader::Section64(header) => {
-                    let section_name = self.parse_name(header.name, sh_string_table_slice);
+                    let section_name = self.parse_name(header.name as usize, sh_string_table_slice);
                     let section_bytes = &self.file_bytes
                         [header.offset as usize..(header.offset + header.size) as usize];
 
@@ -97,7 +98,8 @@ impl<'a> ElfParser<'a> {
                             let (_head, body, _tail) =
                                 unsafe { symbol_slice.align_to::<Elf64Sym>() };
                             let elf_sym = &body[0];
-                            let symbol_name = self.parse_name(elf_sym.name, string_table_slice);
+                            let symbol_name =
+                                self.parse_name(elf_sym.name as usize, string_table_slice);
                             symbols.push(Symbol::new(symbol_name, ElfSym::Sym64(elf_sym)));
                             symbol_offset += size_of::<Elf64Sym>();
                         }
@@ -225,11 +227,13 @@ impl<'a> ElfParser<'a> {
         None
     }
 
-    // TODO: Make this generic for both 32-bit and 64-bit
-    pub fn parse_name(&self, name_start_ndx: Elf64Word, string_table_slice: &'a [u8]) -> &'a str {
+    /// Names of sections and symbols in ELF files are defined by their start index in a string
+    /// table array. Usually these indexes are specified as Elf32Word/Elf64Word (u32), but for
+    /// simplicity we make it usize
+    pub fn parse_name(&self, name_start_ndx: usize, string_table_slice: &'a [u8]) -> &'a str {
         let mut done = false;
         let mut name_end_ndx = name_start_ndx;
-        for byte in &string_table_slice[name_start_ndx as usize..] {
+        for byte in &string_table_slice[name_start_ndx..] {
             if byte == &0 {
                 done = true;
                 break;
@@ -237,13 +241,13 @@ impl<'a> ElfParser<'a> {
             name_end_ndx += 1;
         }
         let _ = done;
-        let string_slice = &string_table_slice[name_start_ndx as usize..name_end_ndx as usize];
-        let section_name = match std::str::from_utf8(string_slice) {
+        let string_slice = &string_table_slice[name_start_ndx..name_end_ndx];
+        let name = match std::str::from_utf8(string_slice) {
             Ok(v) => v,
             // TODO: Bad idea to panic here, should return Result error instead.
             Err(e) => panic!("Invalid UTF-8 sequence {}", e),
         };
-        section_name
+        name
     }
 }
 
@@ -306,7 +310,8 @@ mod test {
 
         // 0 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[0] {
-            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
+            let section_name =
+                parser.parse_name(section_header.name as usize, sh_string_table_slice);
             assert_eq!(section_name, "");
             assert_eq!(section_header.sh_type, ElfSectionType::Null);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -321,7 +326,8 @@ mod test {
 
         // 1 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[1] {
-            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
+            let section_name =
+                parser.parse_name(section_header.name as usize, sh_string_table_slice);
             assert_eq!(section_name, ".text");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
@@ -339,7 +345,8 @@ mod test {
 
         // 2 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[2] {
-            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
+            let section_name =
+                parser.parse_name(section_header.name as usize, sh_string_table_slice);
             assert_eq!(section_name, ".data");
             assert_eq!(section_header.sh_type, ElfSectionType::ProgBits);
             assert_eq!(
@@ -357,7 +364,8 @@ mod test {
 
         // 3 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[3] {
-            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
+            let section_name =
+                parser.parse_name(section_header.name as usize, sh_string_table_slice);
             assert_eq!(section_name, ".symtab");
             assert_eq!(section_header.sh_type, ElfSectionType::SymTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -372,7 +380,8 @@ mod test {
 
         // 4 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[4] {
-            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
+            let section_name =
+                parser.parse_name(section_header.name as usize, sh_string_table_slice);
             assert_eq!(section_name, ".strtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -387,7 +396,8 @@ mod test {
 
         // 5 index
         if let ElfSectionHeader::Section64(section_header) = &section_headers[5] {
-            let section_name = parser.parse_name(section_header.name, sh_string_table_slice);
+            let section_name =
+                parser.parse_name(section_header.name as usize, sh_string_table_slice);
             assert_eq!(section_name, ".shstrtab");
             assert_eq!(section_header.sh_type, ElfSectionType::StrTab);
             assert_eq!(section_header.flags, Elf64SectionFlags::empty());
@@ -412,7 +422,7 @@ mod test {
         if let ElfSectionHeader::Section64(section) = section_headers[3] {
             let sh_string_table_slice =
                 parser.get_sh_string_table_slice(&elf_header, &section_headers);
-            let section_name = parser.parse_name(section.name, sh_string_table_slice);
+            let section_name = parser.parse_name(section.name as usize, sh_string_table_slice);
             assert_eq!(section_name, ".symtab");
             let section_bytes = &parser.file_bytes
                 [section.offset as usize..(section.offset + section.size) as usize];
@@ -435,7 +445,7 @@ mod test {
 
             // 0 index
             if let ElfSym::Sym64(sym) = symbols[0] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x0);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::NoType));
@@ -446,7 +456,7 @@ mod test {
 
             // 1 index
             if let ElfSym::Sym64(sym) = symbols[1] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x401000);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::Section));
@@ -458,7 +468,7 @@ mod test {
 
             // 2 index
             if let ElfSym::Sym64(sym) = symbols[2] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402000);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::Section));
@@ -470,7 +480,7 @@ mod test {
 
             // 3 index
             if let ElfSym::Sym64(sym) = symbols[3] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x0);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::File));
@@ -482,7 +492,7 @@ mod test {
 
             // 4 index
             if let ElfSym::Sym64(sym) = symbols[4] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402000);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::NoType));
@@ -494,7 +504,7 @@ mod test {
 
             // 5 index
             if let ElfSym::Sym64(sym) = symbols[5] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x401000);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::NoType));
@@ -506,7 +516,7 @@ mod test {
 
             // 6 index
             if let ElfSym::Sym64(sym) = symbols[6] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402009);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::NoType));
@@ -518,7 +528,7 @@ mod test {
 
             // 7 index
             if let ElfSym::Sym64(sym) = symbols[7] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402009);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::NoType));
@@ -530,7 +540,7 @@ mod test {
 
             // 8 index
             if let ElfSym::Sym64(sym) = symbols[8] {
-                let symbol_name = parser.parse_name(sym.name, string_table_slice);
+                let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402010);
                 assert_eq!(sym.size, 0);
                 assert_eq!(sym.r#type(), Some(SymType::NoType));
