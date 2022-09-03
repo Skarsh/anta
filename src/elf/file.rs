@@ -1,27 +1,23 @@
-use super::{section::ElfSectionHeader, symbol::ElfSym};
+use super::{section::Section, symbol::Symbol};
 
 #[derive(Debug)]
 pub struct ElfFile<'a> {
-    pub section_headers: Vec<ElfSectionHeader<'a>>,
-    pub symbols: Vec<ElfSym<'a>>,
+    pub sections: Vec<Section<'a>>,
+    pub symbols: Vec<Symbol<'a>>,
 }
 
 impl<'a> ElfFile<'a> {
-    pub fn new(section_headers: Vec<ElfSectionHeader<'a>>, symbols: Vec<ElfSym<'a>>) -> Self {
-        ElfFile {
-            section_headers,
-            symbols,
-        }
+    pub fn new(sections: Vec<Section<'a>>, symbols: Vec<Symbol<'a>>) -> Self {
+        ElfFile { sections, symbols }
     }
 
     #[allow(dead_code, unused_variables)]
-    pub fn get_section_by_name(&self, name: &str) -> &ElfSectionHeader {
-        for section_header in &self.section_headers {
-            if let ElfSectionHeader::Section64(header) = section_header {
-                //if name == header.name {}
+    pub fn get_section_by_name(&self, name: &str) -> Option<&Section> {
+        for section in &self.sections {
+            if name == section.name {
+                return Some(section);
             }
         }
-        // TODO: Remove, this is just a placeholder
-        &self.section_headers[0]
+        None
     }
 }

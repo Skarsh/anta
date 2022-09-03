@@ -126,3 +126,16 @@ impl Visibility for Elf64Sym {
         num::FromPrimitive::from_u8(o)
     }
 }
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct Symbol<'a> {
+    pub name: &'a str,
+    elf_sym: ElfSym<'a>,
+}
+
+impl<'a> Symbol<'a> {
+    pub fn new(name: &'a str, elf_sym: ElfSym<'a>) -> Self {
+        Self { name, elf_sym }
+    }
+}

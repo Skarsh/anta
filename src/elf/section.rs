@@ -107,8 +107,24 @@ pub enum ElfSectionHeader<'a> {
 // TODO: Think more about this
 #[derive(Debug)]
 pub struct Section<'a> {
-    name: &'a str,
-    r#type: ElfSectionType,
+    pub name: &'a str,
+    r#type: &'a ElfSectionType,
     bytes: &'a [u8],
     section_header: ElfSectionHeader<'a>,
+}
+
+impl<'a> Section<'a> {
+    pub fn new(
+        name: &'a str,
+        r#type: &'a ElfSectionType,
+        bytes: &'a [u8],
+        section_header: ElfSectionHeader<'a>,
+    ) -> Self {
+        Self {
+            name,
+            r#type,
+            bytes,
+            section_header,
+        }
+    }
 }
