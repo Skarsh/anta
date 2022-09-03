@@ -40,7 +40,6 @@ impl<'a> ElfParser<'a> {
         let elf_header = self.parse_header();
         let section_headers = self.parse_section_headers(&elf_header);
         let sh_string_table_slice = self.get_sh_string_table_slice(&elf_header, &section_headers);
-
         let string_table_slice = self.get_string_table_slice(&section_headers).unwrap();
 
         let mut sections = Vec::<Section>::new();
@@ -234,7 +233,7 @@ impl<'a> ElfParser<'a> {
         }
     }
 
-    /// Contrary to the section header string table, this is string table contains
+    /// Contrary to the section header string table, this string table contains
     /// other strings, e.g names of symbols
     pub fn get_string_table_slice(&self, section_headers: &[ElfSectionHeader]) -> Option<&[u8]> {
         for sh in section_headers {
