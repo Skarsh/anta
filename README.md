@@ -2,7 +2,7 @@
 
 ![Tamandua](../assets/tamandua_grey.jpg?raw=true)
 
-[![Build Status](https://github.com/skarsh/debug-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Skarsh/debug-rs/actions/workflows/ci.yml)
+[![Build Status](https://github.com/skarsh/debug-rs/actions/workflows/build.yml/badge.svg)](https://github.com/Skarsh/debug-rs/actions/workflows/build.yml)
 [![Security audit](https://github.com/Skarsh/debug-rs/actions/workflows/audit.yml/badge.svg?branch=main)](https://github.com/Skarsh/debug-rs/actions/workflows/audit.yml)
 
 ## Introduction
