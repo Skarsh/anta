@@ -51,6 +51,8 @@ impl<'a> ElfParser<'a> {
                     let section_name = self.parse_name(header.name as usize, sh_string_table_slice);
                     let section_bytes = &self.file_bytes
                         [header.offset as usize..(header.offset + header.size) as usize];
+
+                    let section_header_clone = section_header.clone();
                     sections.push(Section::new(
                         section_name,
                         &header.sh_type,
@@ -58,21 +60,12 @@ impl<'a> ElfParser<'a> {
                         section_header,
                     ));
 
-                    if section_name == ".symtab" {
-                        let mut symbol_offset: usize = header.offset.try_into().unwrap();
-                        let num_symbols = section_bytes.len() / size_of::<Elf32Sym>();
-                        for _symbol in 0..num_symbols {
-                            let symbol_slice = &self.file_bytes
-                                [symbol_offset..symbol_offset + size_of::<Elf32Sym>()];
-
-                            let (_head, body, _tail) =
-                                unsafe { symbol_slice.align_to::<Elf32Sym>() };
-                            let elf_sym = &body[0];
-                            let symbol_name =
-                                self.parse_name(elf_sym.name as usize, string_table_slice);
-                            symbols.push(Symbol::new(symbol_name, ElfSym::Sym32(elf_sym)));
-                            symbol_offset += size_of::<Elf32Sym>();
-                        }
+                    if let ElfSectionType::SymTab = header.sh_type {
+                        symbols = self.parse_symbols(
+                            &section_header_clone,
+                            section_bytes,
+                            string_table_slice,
+                        )
                     }
                 }
                 ElfSectionHeader::Section64(header) => {
@@ -80,6 +73,7 @@ impl<'a> ElfParser<'a> {
                     let section_bytes = &self.file_bytes
                         [header.offset as usize..(header.offset + header.size) as usize];
 
+                    let section_header_clone = section_header.clone();
                     sections.push(Section::new(
                         section_name,
                         &header.sh_type,
@@ -87,22 +81,12 @@ impl<'a> ElfParser<'a> {
                         section_header,
                     ));
 
-                    // TODO: Extract the part of parsing symbol
-                    if section_name == ".symtab" {
-                        let mut symbol_offset: usize = header.offset.try_into().unwrap();
-                        let num_symbols = section_bytes.len() / size_of::<Elf64Sym>();
-                        for _symbol in 0..num_symbols {
-                            let symbol_slice = &self.file_bytes
-                                [symbol_offset..symbol_offset + size_of::<Elf64Sym>()];
-
-                            let (_head, body, _tail) =
-                                unsafe { symbol_slice.align_to::<Elf64Sym>() };
-                            let elf_sym = &body[0];
-                            let symbol_name =
-                                self.parse_name(elf_sym.name as usize, string_table_slice);
-                            symbols.push(Symbol::new(symbol_name, ElfSym::Sym64(elf_sym)));
-                            symbol_offset += size_of::<Elf64Sym>();
-                        }
+                    if let ElfSectionType::SymTab = header.sh_type {
+                        symbols = self.parse_symbols(
+                            &section_header_clone,
+                            section_bytes,
+                            string_table_slice,
+                        )
                     }
                 }
             }
@@ -149,7 +133,8 @@ impl<'a> ElfParser<'a> {
                     let entry_slice =
                         &self.file_bytes[entry_offset..entry_offset + header.sh_ent_size as usize];
                     // TODO: Error handling, what if data is not aligned
-                    let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf32Shdr>() };
+                    let (head, body, _tail) = unsafe { entry_slice.align_to::<Elf32Shdr>() };
+                    assert!(head.is_empty(), "Data was not aligned");
                     let section_header = &body[0];
                     section_header_entries.push(ElfSectionHeader::Section32(section_header));
 
@@ -163,7 +148,8 @@ impl<'a> ElfParser<'a> {
                     let entry_slice =
                         &self.file_bytes[entry_offset..entry_offset + header.sh_ent_size as usize];
                     // TODO: Error handling, what if data is not aligned
-                    let (_head, body, _tail) = unsafe { entry_slice.align_to::<Elf64Shdr>() };
+                    let (head, body, _tail) = unsafe { entry_slice.align_to::<Elf64Shdr>() };
+                    assert!(head.is_empty(), "Data was not aligned");
                     let section_header = &body[0];
                     section_header_entries.push(ElfSectionHeader::Section64(section_header));
 
@@ -174,6 +160,53 @@ impl<'a> ElfParser<'a> {
         section_header_entries
     }
 
+    pub fn parse_symbols(
+        &self,
+        section_header: &ElfSectionHeader,
+        section_bytes: &'a [u8],
+        string_table_slice: &'a [u8],
+    ) -> Vec<Symbol> {
+        let mut symbols = Vec::<Symbol>::new();
+        match section_header {
+            ElfSectionHeader::Section32(header) => {
+                let mut symbol_offset: usize = header.offset.try_into().unwrap();
+                let num_symbols = section_bytes.len() / size_of::<Elf32Sym>();
+                for _symbol in 0..num_symbols {
+                    let symbol_slice =
+                        &self.file_bytes[symbol_offset..symbol_offset + size_of::<Elf32Sym>()];
+
+                    let (head, body, _tail) = unsafe { symbol_slice.align_to::<Elf32Sym>() };
+                    assert!(head.is_empty(), "Data was not aligned");
+                    let elf_sym = &body[0];
+                    let symbol_name = self.parse_name(elf_sym.name as usize, string_table_slice);
+                    symbols.push(Symbol::new(symbol_name, ElfSym::Sym32(elf_sym)));
+                    symbol_offset += size_of::<Elf32Sym>();
+                }
+            }
+            ElfSectionHeader::Section64(header) => {
+                let mut symbol_offset: usize = header.offset.try_into().unwrap();
+                let num_symbols = section_bytes.len() / size_of::<Elf64Sym>();
+                for _symbol in 0..num_symbols {
+                    let symbol_slice =
+                        &self.file_bytes[symbol_offset..symbol_offset + size_of::<Elf64Sym>()];
+
+                    let (head, body, _tail) = unsafe { symbol_slice.align_to::<Elf64Sym>() };
+                    assert!(head.is_empty(), "Data was not aligned");
+                    let elf_sym = &body[0];
+                    let symbol_name = self.parse_name(elf_sym.name as usize, string_table_slice);
+                    symbols.push(Symbol::new(symbol_name, ElfSym::Sym64(elf_sym)));
+                    symbol_offset += size_of::<Elf64Sym>();
+                }
+            }
+        }
+
+        symbols
+    }
+
+    /// Fetch the section header string table slice.
+    /// This string table is for fetching the names of different
+    /// sections, and is stored in its own section, which is defined
+    /// in the elf header struct
     pub fn get_sh_string_table_slice(
         &self,
         elf_header: &ElfHeader,
@@ -201,6 +234,8 @@ impl<'a> ElfParser<'a> {
         }
     }
 
+    /// Contrary to the section header string table, this is string table contains
+    /// other strings, e.g names of symbols
     pub fn get_string_table_slice(&self, section_headers: &[ElfSectionHeader]) -> Option<&[u8]> {
         for sh in section_headers {
             match sh {
@@ -228,8 +263,8 @@ impl<'a> ElfParser<'a> {
     }
 
     /// Names of sections and symbols in ELF files are defined by their start index in a string
-    /// table array. Usually these indexes are specified as Elf32Word/Elf64Word (u32), but for
-    /// simplicity we make it usize
+    /// index table array. Usually these indexes are specified as Elf32Word/Elf64Word (u32),
+    /// but for simplicity we make it usize
     pub fn parse_name(&self, name_start_ndx: usize, string_table_slice: &'a [u8]) -> &'a str {
         let mut done = false;
         let mut name_end_ndx = name_start_ndx;
@@ -419,32 +454,29 @@ mod test {
         let section_headers = parser.parse_section_headers(&elf_header);
         assert_eq!(section_headers.len(), 6);
 
-        if let ElfSectionHeader::Section64(section) = section_headers[3] {
+        let symbol_section_header_enum = &section_headers[3];
+        if let ElfSectionHeader::Section64(section_header) = symbol_section_header_enum {
             let sh_string_table_slice =
                 parser.get_sh_string_table_slice(&elf_header, &section_headers);
-            let section_name = parser.parse_name(section.name as usize, sh_string_table_slice);
+            let section_name =
+                parser.parse_name(section_header.name as usize, sh_string_table_slice);
             assert_eq!(section_name, ".symtab");
-            let section_bytes = &parser.file_bytes
-                [section.offset as usize..(section.offset + section.size) as usize];
+            let section_bytes = &parser.file_bytes[section_header.offset as usize
+                ..(section_header.offset + section_header.size) as usize];
             assert_eq!(section_bytes.len() % size_of::<Elf64Sym>(), 0);
-
-            let mut symbols = Vec::new();
-            let mut symbol_offset: usize = section.offset.try_into().unwrap();
-            let num_symbols = section_bytes.len() / size_of::<Elf64Sym>();
-            for _symbol in 0..num_symbols {
-                let symbol_slice =
-                    &parser.file_bytes[symbol_offset..symbol_offset + size_of::<Elf64Sym>()];
-                let (_head, body, _tail) = unsafe { symbol_slice.align_to::<Elf64Sym>() };
-                let symbol = &body[0];
-                symbols.push(ElfSym::Sym64(symbol));
-                symbol_offset += size_of::<Elf64Sym>();
-            }
-            assert_eq!(symbols.len(), 9);
 
             let string_table_slice = parser.get_string_table_slice(&section_headers).unwrap();
 
+            let symbols = parser.parse_symbols(
+                &symbol_section_header_enum,
+                section_bytes,
+                string_table_slice,
+            );
+
+            assert_eq!(symbols.len(), 9);
+
             // 0 index
-            if let ElfSym::Sym64(sym) = symbols[0] {
+            if let ElfSym::Sym64(sym) = symbols[0].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x0);
                 assert_eq!(sym.size, 0);
@@ -455,7 +487,7 @@ mod test {
             }
 
             // 1 index
-            if let ElfSym::Sym64(sym) = symbols[1] {
+            if let ElfSym::Sym64(sym) = symbols[1].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x401000);
                 assert_eq!(sym.size, 0);
@@ -467,7 +499,7 @@ mod test {
             }
 
             // 2 index
-            if let ElfSym::Sym64(sym) = symbols[2] {
+            if let ElfSym::Sym64(sym) = symbols[2].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402000);
                 assert_eq!(sym.size, 0);
@@ -479,7 +511,7 @@ mod test {
             }
 
             // 3 index
-            if let ElfSym::Sym64(sym) = symbols[3] {
+            if let ElfSym::Sym64(sym) = symbols[3].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x0);
                 assert_eq!(sym.size, 0);
@@ -491,7 +523,7 @@ mod test {
             }
 
             // 4 index
-            if let ElfSym::Sym64(sym) = symbols[4] {
+            if let ElfSym::Sym64(sym) = symbols[4].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402000);
                 assert_eq!(sym.size, 0);
@@ -503,7 +535,7 @@ mod test {
             }
 
             // 5 index
-            if let ElfSym::Sym64(sym) = symbols[5] {
+            if let ElfSym::Sym64(sym) = symbols[5].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x401000);
                 assert_eq!(sym.size, 0);
@@ -515,7 +547,7 @@ mod test {
             }
 
             // 6 index
-            if let ElfSym::Sym64(sym) = symbols[6] {
+            if let ElfSym::Sym64(sym) = symbols[6].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402009);
                 assert_eq!(sym.size, 0);
@@ -527,7 +559,7 @@ mod test {
             }
 
             // 7 index
-            if let ElfSym::Sym64(sym) = symbols[7] {
+            if let ElfSym::Sym64(sym) = symbols[7].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402009);
                 assert_eq!(sym.size, 0);
@@ -539,7 +571,7 @@ mod test {
             }
 
             // 8 index
-            if let ElfSym::Sym64(sym) = symbols[8] {
+            if let ElfSym::Sym64(sym) = symbols[8].elf_sym {
                 let symbol_name = parser.parse_name(sym.name as usize, string_table_slice);
                 assert_eq!(sym.value, 0x402010);
                 assert_eq!(sym.size, 0);

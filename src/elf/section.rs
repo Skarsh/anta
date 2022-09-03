@@ -5,7 +5,7 @@ use bitflags::bitflags;
 
 use super::types::*;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum ElfSectionType {
     Null = 0,
@@ -83,7 +83,7 @@ pub struct Elf32Shdr {
     pub ent_size: Elf32Word,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[repr(C)]
 pub struct Elf64Shdr {
     pub name: Elf64Word,
@@ -98,7 +98,7 @@ pub struct Elf64Shdr {
     pub ent_size: Elf64Xword,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ElfSectionHeader<'a> {
     Section32(&'a Elf32Shdr),
     Section64(&'a Elf64Shdr),

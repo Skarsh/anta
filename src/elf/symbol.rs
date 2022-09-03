@@ -131,7 +131,7 @@ impl Visibility for Elf64Sym {
 #[allow(dead_code)]
 pub struct Symbol<'a> {
     pub name: &'a str,
-    elf_sym: ElfSym<'a>,
+    pub elf_sym: ElfSym<'a>,
 }
 
 impl<'a> Symbol<'a> {
