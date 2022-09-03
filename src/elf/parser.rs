@@ -468,7 +468,7 @@ mod test {
             let string_table_slice = parser.get_string_table_slice(&section_headers).unwrap();
 
             let symbols = parser.parse_symbols(
-                &symbol_section_header_enum,
+                symbol_section_header_enum,
                 section_bytes,
                 string_table_slice,
             );
