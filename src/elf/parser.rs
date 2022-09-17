@@ -330,6 +330,33 @@ mod test {
             assert_eq!(header.sh_num, 6);
             assert_eq!(header.sh_str_ndx, 5);
         }
+
+        let mut parser = ElfParser::new(Path::new("samples/bin/entry_point"));
+        parser.read_elf_file_into_buffer();
+        if let ElfHeader::Elf64(header) = parser.parse_header() {
+            assert_eq!(header.elf_type, ElfType::Dyn);
+            assert_eq!(header.machine, Machine::X86_64);
+            assert_eq!(header.version, Version::Current);
+            assert_eq!(header.entry, 0x1060);
+            assert_eq!(header.ph_off, 64);
+            assert_eq!(header.sh_off, 16920);
+            assert_eq!(header.flags, 0x0);
+            assert_eq!(header.eh_size, 64);
+            assert_eq!(header.ph_ent_size, 56);
+            assert_eq!(header.ph_num, 13);
+            assert_eq!(header.sh_ent_size, 64);
+            assert_eq!(header.sh_num, 36);
+            assert_eq!(header.sh_str_ndx, 35);
+        }
+    }
+
+    #[test]
+    fn test_parse_name() {
+        let mut parser = ElfParser::new(Path::new("samples/bin/entry_point"));
+        parser.read_elf_file_into_buffer();
+        let symbol = "printf@@GLIBC_2.2.5\0lla\0";
+        let name = parser.parse_name(0, symbol.as_bytes());
+        println!("name: {}", name);
     }
 
     #[test]
@@ -587,7 +614,12 @@ mod test {
     fn test_parse_elf_file() {
         let mut parser = ElfParser::new(Path::new("samples/bin/hello"));
         let file = parser.parse_elf_file();
+        println!("{:?}", file);
         assert_eq!(file.sections.len(), 6);
         assert_eq!(file.symbols.len(), 9);
+
+        //let mut parser = ElfParser::new(Path::new("samples/bin/entry_point"));
+        //let file = parser.parse_elf_file();
+        //assert_eq!(file.sections.len(), 36);
     }
 }
