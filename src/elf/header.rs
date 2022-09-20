@@ -4,10 +4,10 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::upper_case_acronyms)]
 
-use super::types::*;
 use derive_try_from_primitive::TryFromPrimitive;
 
 use super::parse;
+use super::types::*;
 
 pub const ELFMAG0: u8 = 0x7f;
 pub const ELFMAG1: u8 = 0x45;
@@ -27,6 +27,8 @@ pub const EI_PAD_IDX: usize = 9;
 pub const EI_NIDENT: usize = 16;
 
 pub const ELF_IDENT_PAD_SIZE: usize = 7;
+
+pub type ElfIdentPad = [u8; ELF_IDENT_PAD_SIZE];
 
 #[macro_export]
 macro_rules! impl_parse_for_enum {
@@ -123,22 +125,43 @@ pub struct Ident {
     version: Version,
     osabi: OsAbi,
     abi_version: ElfByte,
-    pad: [u8; ELF_IDENT_PAD_SIZE],
+    pad: ElfIdentPad,
 }
 
-//impl Ident {
-//
-//    const MAGIC: &'static [u8] = &[ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3];
-//
-//    fn parse(input: parse::Input) -> parse::Result<Self> {
-//        use nom::{
-//            bytes::complete::tag,
-//            error::context
-//        };
-//        //let (input, _) = context("Magic", tag(Self::MAGIC))(input)?;
-//
-//    }
-//}
+impl Ident {
+    const MAGIC: &'static [u8] = &[ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3];
+    const ELF_IDENT_PAD: &'static [u8] = &[0; ELF_IDENT_PAD_SIZE];
+
+    fn parse(input: parse::Input) -> parse::Result<Self> {
+        use nom::{bytes::complete::tag, error::context};
+        let (input, magic) = context("Magic", tag(Self::MAGIC))(input)?;
+        let (input, class) = Class::parse(input)?;
+        let (input, data) = Data::parse(input)?;
+        let (input, version) = Version::parse(input)?;
+        let (input, osabi) = OsAbi::parse(input)?;
+        let (input, abi_version) = context("ABI Version", tag(&[0; 1]))(input)?;
+        let (input, pad) = context("Pad", tag(Self::ELF_IDENT_PAD))(input)?;
+
+        // TODO: Should be possible to do this in a nicer way using nom instead
+        let mut new_pad = [0; ELF_IDENT_PAD_SIZE];
+        new_pad[..ELF_IDENT_PAD_SIZE].copy_from_slice(&pad[..ELF_IDENT_PAD_SIZE]);
+
+        let res = Self {
+            mag0: magic[0],
+            mag1: magic[1],
+            mag2: magic[2],
+            mag3: magic[3],
+            class,
+            data,
+            version,
+            osabi,
+            abi_version: abi_version[0],
+            pad: new_pad,
+        };
+
+        Ok((input, res))
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, TryFromPrimitive)]
 #[repr(u16)]
@@ -421,11 +444,13 @@ mod tests {
 
         f.read_exact(&mut buffer).unwrap();
 
-        //let (head, body, tail) = unsafe { buffer.align_to::<Ident>() };
-        //assert!(head.is_empty(), "Data was not aligned");
-        //let elf_ident = &body[0];
+        let ident = Ident::parse(&buffer).unwrap();
 
-        //assert!(validate_elf_ident(elf_ident));
+        assert!(validate_elf_ident(&ident.1));
+        assert_eq!(ident.1.class, Class::ElfClass64);
+        assert_eq!(ident.1.data, Data::ElfData2Lsb);
+        assert_eq!(ident.1.version, Version::Current);
+        assert_eq!(ident.1.osabi, OsAbi::None);
     }
 
     #[test]
