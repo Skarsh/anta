@@ -135,6 +135,7 @@ impl Ident {
     const MAGIC: &'static [u8] = &[ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3];
     const ELF_IDENT_PAD: &'static [u8] = &[0; ELF_IDENT_PAD_SIZE];
 
+    /// Parse Elf ident bytes into Ident struct
     fn parse(input: parse::Input) -> parse::Result<Self> {
         let (input, magic) = context("Magic", tag(Self::MAGIC))(input)?;
         let (input, class) = Class::parse(input)?;
@@ -371,6 +372,45 @@ pub struct Elf32Ehdr {
     pub sh_str_ndx: Elf32Half,
 }
 
+impl Elf32Ehdr {
+    /// Parse Elf 32-bit header from byte slice
+    fn parse(input: parse::Input) -> parse::Result<Self> {
+        let (input, ident) = Ident::parse(input)?;
+        let (input, elf_type) = ElfType::parse(input)?;
+        let (input, machine) = Machine::parse(input)?;
+        let (input, version) = le_u32(input)?;
+        let (input, entry) = le_u32(input)?;
+        let (input, ph_off) = le_u32(input)?;
+        let (input, sh_off) = le_u32(input)?;
+        let (input, flags) = le_u32(input)?;
+        let (input, eh_size) = le_u16(input)?;
+        let (input, ph_ent_size) = le_u16(input)?;
+        let (input, ph_num) = le_u16(input)?;
+        let (input, sh_ent_size) = le_u16(input)?;
+        let (input, sh_num) = le_u16(input)?;
+        let (input, sh_str_ndx) = le_u16(input)?;
+
+        let res = Self {
+            ident,
+            elf_type,
+            machine,
+            version,
+            entry,
+            ph_off,
+            sh_off,
+            flags,
+            eh_size,
+            ph_ent_size,
+            ph_num,
+            sh_ent_size,
+            sh_num,
+            sh_str_ndx,
+        };
+
+        Ok((input, res))
+    }
+}
+
 // TODO: pub or private access for fields?
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
@@ -392,6 +432,7 @@ pub struct Elf64Ehdr {
 }
 
 impl Elf64Ehdr {
+    /// Parse Elf 64-bit header from byte slice
     fn parse(input: parse::Input) -> parse::Result<Self> {
         let (input, ident) = Ident::parse(input)?;
         let (input, elf_type) = ElfType::parse(input)?;
