@@ -52,6 +52,7 @@ macro_rules! impl_parse_for_enum {
     };
 }
 
+/// Class field for the Elf header ident struct
 #[derive(Debug, Clone, PartialEq, Eq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Class {
@@ -62,6 +63,7 @@ pub enum Class {
 
 impl_parse_for_enum!(Class, le_u8);
 
+/// Data field for the Elf header ident struct
 #[derive(Debug, Clone, PartialEq, Eq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Data {
@@ -83,6 +85,7 @@ pub enum Version {
 
 impl_parse_for_enum!(Version, le_u8);
 
+/// OSABI field of the elf ident struct
 #[derive(Debug, Clone, PartialEq, Eq, TryFromPrimitive)]
 #[repr(u8)]
 enum OsAbi {
@@ -116,6 +119,7 @@ enum OsAbi {
 
 impl_parse_for_enum!(OsAbi, le_u8);
 
+/// Elf Ident struct
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct Ident {
