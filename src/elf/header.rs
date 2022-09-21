@@ -7,10 +7,7 @@
 use derive_try_from_primitive::TryFromPrimitive;
 use nom::bytes::complete::tag;
 use nom::error::context;
-use nom::number::complete::le_u16;
-use nom::number::complete::le_u32;
-use nom::number::complete::le_u64;
-use nom::number::complete::le_u8;
+use nom::number::complete::{le_u16, le_u32, le_u64, le_u8};
 
 use super::parse;
 use super::types::*;
