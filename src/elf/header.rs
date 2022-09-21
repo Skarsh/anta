@@ -5,6 +5,12 @@
 #![allow(clippy::upper_case_acronyms)]
 
 use derive_try_from_primitive::TryFromPrimitive;
+use nom::bytes::complete::tag;
+use nom::error::context;
+use nom::number::complete::le_u16;
+use nom::number::complete::le_u32;
+use nom::number::complete::le_u64;
+use nom::number::complete::le_u8;
 
 use super::parse;
 use super::types::*;
@@ -133,16 +139,14 @@ impl Ident {
     const ELF_IDENT_PAD: &'static [u8] = &[0; ELF_IDENT_PAD_SIZE];
 
     fn parse(input: parse::Input) -> parse::Result<Self> {
-        use nom::{bytes::complete::tag, error::context};
         let (input, magic) = context("Magic", tag(Self::MAGIC))(input)?;
         let (input, class) = Class::parse(input)?;
         let (input, data) = Data::parse(input)?;
         let (input, version) = Version::parse(input)?;
         let (input, osabi) = OsAbi::parse(input)?;
-        let (input, abi_version) = context("ABI Version", tag(&[0; 1]))(input)?;
+        let (input, abi_version) = le_u8(input)?;
         let (input, pad) = context("Pad", tag(Self::ELF_IDENT_PAD))(input)?;
 
-        // TODO: Should be possible to do this in a nicer way using nom instead
         let mut new_pad = [0; ELF_IDENT_PAD_SIZE];
         new_pad[..ELF_IDENT_PAD_SIZE].copy_from_slice(&pad[..ELF_IDENT_PAD_SIZE]);
 
@@ -155,7 +159,7 @@ impl Ident {
             data,
             version,
             osabi,
-            abi_version: abi_version[0],
+            abi_version,
             pad: new_pad,
         };
 
@@ -357,7 +361,7 @@ pub struct Elf32Ehdr {
     pub ident: Ident,
     pub elf_type: ElfType,
     pub machine: Machine,
-    pub version: Version,
+    pub version: u32,
     pub entry: Elf32Addr,
     pub ph_off: Elf32Off,
     pub sh_off: Elf32Off,
@@ -377,7 +381,7 @@ pub struct Elf64Ehdr {
     pub ident: Ident,
     pub elf_type: ElfType,
     pub machine: Machine,
-    pub version: Version,
+    pub version: u32,
     pub entry: Elf64Addr,
     pub ph_off: Elf64Off,
     pub sh_off: Elf64Off,
@@ -388,6 +392,44 @@ pub struct Elf64Ehdr {
     pub sh_ent_size: Elf64Half,
     pub sh_num: Elf64Half,
     pub sh_str_ndx: Elf64Half,
+}
+
+impl Elf64Ehdr {
+    fn parse(input: parse::Input) -> parse::Result<Self> {
+        let (input, ident) = Ident::parse(input)?;
+        let (input, elf_type) = ElfType::parse(input)?;
+        let (input, machine) = Machine::parse(input)?;
+        let (input, version) = le_u32(input)?;
+        let (input, entry) = le_u64(input)?;
+        let (input, ph_off) = le_u64(input)?;
+        let (input, sh_off) = le_u64(input)?;
+        let (input, flags) = le_u32(input)?;
+        let (input, eh_size) = le_u16(input)?;
+        let (input, ph_ent_size) = le_u16(input)?;
+        let (input, ph_num) = le_u16(input)?;
+        let (input, sh_ent_size) = le_u16(input)?;
+        let (input, sh_num) = le_u16(input)?;
+        let (input, sh_str_ndx) = le_u16(input)?;
+
+        let res = Self {
+            ident,
+            elf_type,
+            machine,
+            version,
+            entry,
+            ph_off,
+            sh_off,
+            flags,
+            eh_size,
+            ph_ent_size,
+            ph_num,
+            sh_ent_size,
+            sh_num,
+            sh_str_ndx,
+        };
+
+        Ok((input, res))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -444,28 +486,43 @@ mod tests {
 
         f.read_exact(&mut buffer).unwrap();
 
-        let ident = Ident::parse(&buffer).unwrap();
+        let (buffer, ident) = Ident::parse(&buffer).unwrap();
 
-        assert!(validate_elf_ident(&ident.1));
-        assert_eq!(ident.1.class, Class::ElfClass64);
-        assert_eq!(ident.1.data, Data::ElfData2Lsb);
-        assert_eq!(ident.1.version, Version::Current);
-        assert_eq!(ident.1.osabi, OsAbi::None);
+        assert!(validate_elf_ident(&ident));
+        assert_eq!(ident.class, Class::ElfClass64);
+        assert_eq!(ident.data, Data::ElfData2Lsb);
+        assert_eq!(ident.version, Version::Current);
+        assert_eq!(ident.osabi, OsAbi::None);
     }
 
     #[test]
     fn test_parse_elf64_header() {
         let mut f = File::open("samples/bin/hello").unwrap();
-        let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer).unwrap();
+        const HEADER_SIZE: usize = std::mem::size_of::<Elf64Ehdr>();
+        println!("HEADER_SIZE: {}", HEADER_SIZE);
+        let mut buffer: [u8; HEADER_SIZE] = [0; HEADER_SIZE];
+        f.read_exact(&mut buffer).unwrap();
 
-        let (head, body, tail) = unsafe { buffer.align_to::<Elf64Ehdr>() };
-        assert!(head.is_empty(), "Data was not aligned");
-        let elf_64_ehdr = &body[0];
+        let (buffer, elf_64_ehdr) = Elf64Ehdr::parse(&buffer).unwrap();
+
         assert!(validate_elf_ident(&elf_64_ehdr.ident));
 
+        assert_eq!(elf_64_ehdr.ident.class, Class::ElfClass64);
+        assert_eq!(elf_64_ehdr.ident.data, Data::ElfData2Lsb);
+        assert_eq!(elf_64_ehdr.ident.version, Version::Current);
+        assert_eq!(elf_64_ehdr.ident.osabi, OsAbi::None);
         assert_eq!(elf_64_ehdr.elf_type, ElfType::Exec);
         assert_eq!(elf_64_ehdr.machine, Machine::X86_64);
+        assert_eq!(elf_64_ehdr.entry, 0x401000);
+        assert_eq!(elf_64_ehdr.ph_off, 64);
+        assert_eq!(elf_64_ehdr.sh_off, 8528);
+        assert_eq!(elf_64_ehdr.flags, 0x0);
+        assert_eq!(elf_64_ehdr.eh_size, 64);
+        assert_eq!(elf_64_ehdr.ph_ent_size, 56);
+        assert_eq!(elf_64_ehdr.ph_num, 3);
+        assert_eq!(elf_64_ehdr.sh_ent_size, 64);
+        assert_eq!(elf_64_ehdr.sh_num, 6);
+        assert_eq!(elf_64_ehdr.sh_str_ndx, 5);
 
         println!("{:x?}", elf_64_ehdr);
     }

@@ -318,7 +318,7 @@ mod test {
         if let ElfHeader::Elf64(header) = parser.parse_header() {
             assert_eq!(header.elf_type, ElfType::Exec);
             assert_eq!(header.machine, Machine::X86_64);
-            assert_eq!(header.version, Version::Current);
+            assert_eq!(header.version, 0x1);
             assert_eq!(header.entry, 0x401000);
             assert_eq!(header.ph_off, 64);
             assert_eq!(header.sh_off, 8528);
@@ -336,7 +336,7 @@ mod test {
         if let ElfHeader::Elf64(header) = parser.parse_header() {
             assert_eq!(header.elf_type, ElfType::Dyn);
             assert_eq!(header.machine, Machine::X86_64);
-            assert_eq!(header.version, Version::Current);
+            assert_eq!(header.version, 0x1);
             assert_eq!(header.entry, 0x1060);
             assert_eq!(header.ph_off, 64);
             assert_eq!(header.sh_off, 16920);
